@@ -26,3 +26,7 @@
     (is (= output3 (opcode-ex input3)))
     (is (= output4 (opcode-ex input4)))
     (is (= output5 (opcode-ex input5)))))
+
+(deftest part2-test
+  (testing "Can find the noun and verb from part 1"
+    (is (= 1202 (day02-part2-soln 3085697)))))
