@@ -26,15 +26,27 @@
   [digits]
   (any? matching-pair? (partition 2 1 digits)))
 
-(def all-conds?
+(def all-conds-part1?
   (every-pred six-digit? not-decreasing-digits? one-matching-pair?))
 
 (defn satisfactory-numbers
-  [numbers]
+  [numbers condition]
   (->> numbers
        (map digits)
-       (filter all-conds?)))
+       (filter condition)))
 
 (defn day04-part1-soln
   []
-  (count (satisfactory-numbers (range 231832 767346))))
+  (count (satisfactory-numbers (range 231832 767346) all-conds-part1?)))
+
+(defn no-larger-groups?
+  [digits]
+  (let [pairs (filter matching-pair? (partition 2 1 digits))]
+    (any? #(= 1 %) (vals (frequencies pairs)))))
+
+(def all-conds-part2?
+  (every-pred six-digit? not-decreasing-digits? one-matching-pair? no-larger-groups?))
+
+(defn day04-part2-soln
+  []
+  (count (satisfactory-numbers (range 231832 767346) all-conds-part2?)))

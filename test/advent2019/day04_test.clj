@@ -15,3 +15,9 @@
     (is (one-matching-pair? (digits 111111)))
     (is (one-matching-pair? (digits 223450)))
     (is (not (one-matching-pair? (digits 123789))))))
+
+(deftest pairs-not-in-larger-group-condition
+  (testing "Consecutive same values can only come in even-sized runs"
+    (is (no-larger-groups? (digits 112233)))
+    (is (not (no-larger-groups? (digits 123444))))
+    (is (no-larger-groups? (digits 111122)))))
