@@ -20,48 +20,57 @@
   (assoc intcode pos value))
 
 (defn add
-  [intcode [t1 t2 _] [v1 v2 v3]]
-  (write-param intcode v3 (+ (read-param intcode t1 v1)
-                             (read-param intcode t2 v2))))
+  [intcode pos [t1 t2 _] [v1 v2 v3]]
+  [(write-param intcode v3 (+ (read-param intcode t1 v1)
+                              (read-param intcode t2 v2)))
+   (+ 4 pos)])
 
 (defn multiply
-  [intcode [t1 t2 _] [v1 v2 v3]]
-  (write-param intcode v3 (* (read-param intcode t1 v1)
-                             (read-param intcode t2 v2))))
+  [intcode pos [t1 t2 _] [v1 v2 v3]]
+  [(write-param intcode v3 (* (read-param intcode t1 v1)
+                              (read-param intcode t2 v2)))
+   (+ 4 pos)])
 
 (defn input
-  [intcode [t1] [v1]]
-  (write-param intcode v1 (read-string (read-line))))
+  [intcode pos [t1] [v1]]
+  [(write-param intcode v1 (read-string (read-line)))
+   (+ 2 pos)])
 
 (defn output
-  [intcode [t1] [v1]]
+  [intcode pos [t1] [v1]]
   (do
     (println (read-param intcode t1 v1))
-    intcode))
+    [intcode (+ 2 pos)]))
 
 (defn jump-if-true
-  [intcode [t1 t2] [v1 v2]]
-  ; TODO
-  intcode)
+  [intcode pos [t1 t2] [v1 v2]]
+  (let [nextpos (if (zero? (read-param intcode t1 v1))
+                  (+ 3 pos)
+                  (read-param intcode t2 v2))]
+    [intcode nextpos]))
 
 (defn jump-if-false
-  [intcode [t1 t2] [v1 v2]]
-  ; TODO
-  intcode)
+  [intcode pos [t1 t2] [v1 v2]]
+  (let [nextpos (if (zero? (read-param intcode t1 v1))
+                  (read-param intcode t2 v2)
+                  (+ 3 pos))]
+    [intcode nextpos]))
 
 (defn less-than
-  [intcode [t1 t2 _] [v1 v2 v3]]
-  (write-param intcode v3 (if (< (read-param intcode t1 v1)
-                                 (read-param intcode t2 v2))
-                            1
-                            0)))
+  [intcode pos [t1 t2 _] [v1 v2 v3]]
+  [(write-param intcode v3 (if (< (read-param intcode t1 v1)
+                                  (read-param intcode t2 v2))
+                             1
+                             0))
+   (+ 4 pos)])
 
 (defn equals
-  [intcode [t1 t2 _] [v1 v2 v3]]
-  (write-param intcode v3 (if (= (read-param intcode t1 v1)
-                                 (read-param intcode t2 v2))
-                            1
-                            0)))
+  [intcode pos [t1 t2 _] [v1 v2 v3]]
+  [(write-param intcode v3 (if (= (read-param intcode t1 v1)
+                                  (read-param intcode t2 v2))
+                             1
+                             0))
+   (+ 4 pos)])
 
 (def ops {1 {:name :add :op add :param-count 3 :size 4}
           2 {:name :multiply :op multiply :param-count 3 :size 4}
@@ -94,7 +103,10 @@
   (let [instruction (parse-instruction (nth intcode pos))
         {:keys [op name size param-types]} instruction
         args (subvec intcode (inc pos) (+ pos size))]
-    [(op intcode param-types args) (+ pos size)]))
+    ; (do
+    ;   (println pos name param-types args)
+    ;   (op intcode pos param-types args))
+    (op intcode pos param-types args)))
 
 (defn intcode-ex
   [intcode]
