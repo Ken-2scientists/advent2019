@@ -1,5 +1,6 @@
 (ns advent2019.intcode
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [manifold.stream :as s]))
 
 (defn parse-intcode
   [intcode-str]
@@ -18,68 +19,61 @@
   (assoc intcode pos value))
 
 (defn add
-  [intcode pos [t1 t2 _] [v1 v2 v3] in out]
+  [intcode pos [t1 t2 _] [v1 v2 v3] _ _]
   [(write-param intcode v3 (+ (read-param intcode t1 v1)
                               (read-param intcode t2 v2)))
-   (+ 4 pos)
-   in
-   out])
+   (+ 4 pos)])
 
 (defn multiply
-  [intcode pos [t1 t2 _] [v1 v2 v3] in out]
+  [intcode pos [t1 t2 _] [v1 v2 v3] _ _]
   [(write-param intcode v3 (* (read-param intcode t1 v1)
                               (read-param intcode t2 v2)))
-   (+ 4 pos)
-   in
-   out])
+   (+ 4 pos)])
 
 (defn input
-  [intcode pos [t1] [v1] in out]
-  [(write-param intcode v1 (first in))
-   (+ 2 pos)
-   (next in)
-   out])
+  [intcode pos [t1] [v1] in _]
+  [(write-param intcode v1 @(s/take! in))
+   (+ 2 pos)])
 
 (defn output
-  [intcode pos [t1] [v1] in out]
-  [intcode
-   (+ 2 pos)
-   in
-   (conj out (read-param intcode t1 v1))])
+  [intcode pos [t1] [v1] _ out]
+  (do
+    (s/put! out (read-param intcode t1 v1))
+    [intcode (+ 2 pos)]))
 
 (defn jump-if-true
-  [intcode pos [t1 t2] [v1 v2] in out]
+  [intcode pos [t1 t2] [v1 v2] _ _]
   (let [nextpos (if (zero? (read-param intcode t1 v1))
                   (+ 3 pos)
                   (read-param intcode t2 v2))]
-    [intcode nextpos in out]))
+    [intcode nextpos]))
 
 (defn jump-if-false
   [intcode pos [t1 t2] [v1 v2] in out]
   (let [nextpos (if (zero? (read-param intcode t1 v1))
                   (read-param intcode t2 v2)
                   (+ 3 pos))]
-    [intcode nextpos in out]))
+    [intcode nextpos]))
 
 (defn less-than
-  [intcode pos [t1 t2 _] [v1 v2 v3] in out]
+  [intcode pos [t1 t2 _] [v1 v2 v3] _ _]
   [(write-param intcode v3 (if (< (read-param intcode t1 v1)
                                   (read-param intcode t2 v2))
                              1
                              0))
-   (+ 4 pos)
-   in
-   out])
+   (+ 4 pos)])
 
 (defn equals
-  [intcode pos [t1 t2 _] [v1 v2 v3] in out]
+  [intcode pos [t1 t2 _] [v1 v2 v3] _ _]
   [(write-param intcode v3 (if (= (read-param intcode t1 v1)
                                   (read-param intcode t2 v2))
                              1
                              0))
-   (+ 4 pos)
-   in
-   out])
+   (+ 4 pos)])
+
+(defn stop
+  [_ _ _ _ _ out]
+  (s/close! out))
 
 (def ops {1 {:name :add :op add :param-count 3 :size 4}
           2 {:name :multiply :op multiply :param-count 3 :size 4}
@@ -117,10 +111,17 @@
     ;   (op intcode pos param-types args in out))
     (op intcode pos param-types args in out)))
 
+(defn intcode-ex-async
+  [intcode in out]
+  (loop [newintcode intcode pos 0]
+    (when (not= 99 (nth newintcode pos))
+      (let [[nextcode nextpos] (apply-op newintcode pos in out)]
+        (recur nextcode nextpos)))))
+
 (defn intcode-ex
-  [intcode in-args]
-  (loop [newintcode intcode pos 0 in in-args out []]
-    (if (= 99 (nth newintcode pos))
-      out
-      (let [[nextcode nextpos nextin nextout] (apply-op newintcode pos in out)]
-        (recur nextcode nextpos nextin nextout)))))
+  [intcode inputs]
+  (let [in (s/->source inputs)
+        out (s/stream)]
+    (do
+      (intcode-ex-async intcode in out)
+      (s/stream->seq out 1000))))
