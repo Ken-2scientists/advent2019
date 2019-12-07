@@ -18,9 +18,9 @@
 
 (deftest pairs-not-in-larger-group-condition
   (testing "Consecutive same values can only come in even-sized runs"
-    (is (no-larger-groups? (digits 112233)))
-    (is (not (no-larger-groups? (digits 123444))))
-    (is (no-larger-groups? (digits 111122)))))
+    (is (pair-not-in-larger-group? (digits 112233)))
+    (is (not (pair-not-in-larger-group? (digits 123444))))
+    (is (pair-not-in-larger-group? (digits 111122)))))
 
 (deftest day04-part1-soln-test
   (testing "Can reproduce the answer for part1"

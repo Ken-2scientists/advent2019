@@ -15,13 +15,9 @@
   [digits]
   (every? (complement neg?) (map - (rest digits) digits)))
 
-(defn matching-pair?
-  [[a b]]
-  (= a b))
-
 (defn one-matching-pair?
   [digits]
-  (any? matching-pair? (partition 2 1 digits)))
+  (any? #(>= % 2) (vals (frequencies digits))))
 
 (def all-conds-part1?
   (every-pred six-digit? not-decreasing-digits? one-matching-pair?))
@@ -36,13 +32,12 @@
   []
   (count (satisfactory-numbers (range 231832 767346) all-conds-part1?)))
 
-(defn no-larger-groups?
+(defn pair-not-in-larger-group?
   [digits]
-  (let [pairs (filter matching-pair? (partition 2 1 digits))]
-    (any? #(= 1 %) (vals (frequencies pairs)))))
+  (any? #(= % 2) (vals (frequencies digits))))
 
 (def all-conds-part2?
-  (every-pred six-digit? not-decreasing-digits? one-matching-pair? no-larger-groups?))
+  (every-pred six-digit? not-decreasing-digits? pair-not-in-larger-group?))
 
 (defn day04-part2-soln
   []
