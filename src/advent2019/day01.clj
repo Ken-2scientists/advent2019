@@ -2,7 +2,7 @@
   (:require [advent2019.utils :as u]))
 
 (def day01-input
-  (map read-string (u/load-file "day01-input.txt")))
+  (map read-string (u/puzzle-input "day01-input.txt")))
 
 (defn fuel
   [m]

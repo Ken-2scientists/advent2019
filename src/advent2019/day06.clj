@@ -3,7 +3,7 @@
             [advent2019.utils :as u]))
 
 (def day06-input
-  (->> (u/load-file "day06-input.txt")
+  (->> (u/puzzle-input "day06-input.txt")
        (map #(str/split % #"\)"))
        (mapcat reverse)
        (apply hash-map)))

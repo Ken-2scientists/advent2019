@@ -1,8 +1,9 @@
 (ns advent2019.day02
   (:require [clojure.string :as str]
+            [advent2019.intcode :as intcode]
             [advent2019.utils :as u]))
 
-(def day02-input (-> "day02-input.txt" u/load-file first u/list-line))
+(def day02-input (u/puzzle-input-vec "day02-input.txt"))
 
 (defn apply-op
   [opcode pos]

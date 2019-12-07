@@ -4,7 +4,7 @@
             [advent2019.utils :as u]))
 
 (def day03-input
-  (->> (u/load-file "day03-input.txt")
+  (->> (u/puzzle-input "day03-input.txt")
        (map #(str/split % #","))))
 
 (defn expand-wire-segment
