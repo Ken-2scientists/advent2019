@@ -21,3 +21,11 @@
     (is (no-larger-groups? (digits 112233)))
     (is (not (no-larger-groups? (digits 123444))))
     (is (no-larger-groups? (digits 111122)))))
+
+(deftest day04-part1-soln-test
+  (testing "Can reproduce the answer for part1"
+    (is (= 1330 (day04-part1-soln)))))
+
+(deftest day01-part2-soln-test
+  (testing "Can reproduce the answer for part2"
+    (is (= 876 (day04-part2-soln)))))
