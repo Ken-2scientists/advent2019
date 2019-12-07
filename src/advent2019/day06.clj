@@ -8,19 +8,6 @@
        (mapcat reverse)
        (apply hash-map)))
 
-(def sample-data
-  {"B" "COM"
-   "C" "B"
-   "D" "C"
-   "E" "D"
-   "F" "E"
-   "G" "B"
-   "H" "G"
-   "I" "D"
-   "J" "E"
-   "K" "J"
-   "L" "K"})
-
 (defn orbit-chain
   [orbits obj]
   (loop [chain [obj] nextobj obj]
@@ -41,21 +28,6 @@
        (map orbit-length)
        (reduce +)))
 
-(def sample-data2
-  {"B" "COM"
-   "C" "B"
-   "D" "C"
-   "E" "D"
-   "F" "E"
-   "G" "B"
-   "H" "G"
-   "I" "D"
-   "J" "E"
-   "K" "J"
-   "L" "K"
-   "YOU" "K"
-   "SAN" "I"})
-
 (defn first-common-ancestor
   [orbits objA objB]
   (let [chainA (orbit-chain orbits objA)
@@ -75,3 +47,11 @@
     (- (+ (distance-to-ancestor orbits objA ancestor)
           (distance-to-ancestor orbits objB ancestor))
        2)))
+
+(defn day06-part1-soln
+  []
+  (orbit-count day06-input))
+
+(defn day06-part2-soln
+  []
+  (orbit-transfers day06-input "YOU" "SAN"))
