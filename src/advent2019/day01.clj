@@ -1,12 +1,8 @@
 (ns advent2019.day01
-  (:require [clojure.java.io :as io]))
+  (:require [advent2019.utils :as u]))
 
 (def day01-input
-  (->> "day01-input.txt"
-       io/resource
-       io/reader
-       line-seq
-       (map read-string)))
+  (map read-string (u/load-file "day01-input.txt")))
 
 (defn fuel
   [m]

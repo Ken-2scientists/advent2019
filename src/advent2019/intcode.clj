@@ -2,12 +2,6 @@
   (:require [clojure.string :as str]
             [manifold.stream :as s]))
 
-(defn parse-intcode
-  [intcode-str]
-  (->> (str/split intcode-str #",")
-       (map read-string)
-       vec))
-
 (defn read-param
   [intcode type value]
   (case type

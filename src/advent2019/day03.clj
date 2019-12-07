@@ -1,13 +1,10 @@
 (ns advent2019.day03
-  (:require [clojure.java.io :as io]
-            [clojure.string :as str]
-            [clojure.set]))
+  (:require [clojure.string :as str]
+            [clojure.set]
+            [advent2019.utils :as u]))
 
 (def day03-input
-  (->> "day03-input.txt"
-       io/resource
-       io/reader
-       line-seq
+  (->> (u/load-file "day03-input.txt")
        (map #(str/split % #","))))
 
 (defn expand-wire-segment

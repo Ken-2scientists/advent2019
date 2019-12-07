@@ -1,12 +1,9 @@
 (ns advent2019.day06
-  (:require [clojure.java.io :as io]
-            [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [advent2019.utils :as u]))
 
 (def day06-input
-  (->> "day06-input.txt"
-       io/resource
-       io/reader
-       line-seq
+  (->> (u/load-file "day06-input.txt")
        (map #(str/split % #"\)"))
        (mapcat reverse)
        (apply hash-map)))

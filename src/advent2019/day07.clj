@@ -1,15 +1,11 @@
 (ns advent2019.day07
-  (:require [clojure.java.io :as io]
-            [clojure.math.combinatorics :as combo]
+  (:require [clojure.math.combinatorics :as combo]
             [manifold.stream :as s]
             [manifold.deferred :as d]
-            [advent2019.intcode :as intcode]))
+            [advent2019.intcode :as intcode]
+            [advent2019.utils :as u]))
 
-(def day07-input
-  (-> "day07-input.txt"
-      io/resource
-      slurp
-      intcode/parse-intcode))
+(def day07-input (-> "day07-input.txt" u/load-file first u/list-line))
 
 (def sample1 [3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0])
 (def sample2 [3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0])

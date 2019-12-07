@@ -1,13 +1,8 @@
 (ns advent2019.day02
-  (:require [clojure.java.io :as io]
-            [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [advent2019.utils :as u]))
 
-(def day02-input
-  (let [str-vals (-> "day02-input.txt"
-                     io/resource
-                     slurp
-                     (str/split #","))]
-    (vec (map read-string str-vals))))
+(def day02-input (-> "day02-input.txt" u/load-file first u/list-line))
 
 (defn apply-op
   [opcode pos]

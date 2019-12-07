@@ -1,7 +1,4 @@
-(ns advent2019.day04
-  (:require [clojure.java.io :as io]
-            [clojure.string :as str]
-            [clojure.set]))
+(ns advent2019.day04)
 
 (def any? (complement not-any?))
 
