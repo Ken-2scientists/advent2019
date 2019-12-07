@@ -108,7 +108,8 @@
 (defn intcode-ex-async
   [intcode in out]
   (loop [newintcode intcode pos 0]
-    (when (not= 99 (nth newintcode pos))
+    (if (= 99 (nth newintcode pos))
+      [newintcode pos out]
       (let [[nextcode nextpos] (apply-op newintcode pos in out)]
         (recur nextcode nextpos)))))
 
@@ -116,6 +117,8 @@
   [intcode inputs]
   (let [in (s/->source inputs)
         out (s/stream)]
-    (do
-      (intcode-ex-async intcode in out)
-      (s/stream->seq out 1000))))
+    (intcode-ex-async intcode in out)))
+
+(defn read-output
+  [[intcode pos out]]
+  (s/stream->seq out 1000))
