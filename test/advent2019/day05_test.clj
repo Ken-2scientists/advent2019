@@ -2,15 +2,10 @@
   (:require [clojure.test :refer :all]
             [advent2019.day05 :refer :all]))
 
-; (deftest can-parse-instruction
-;   (testing "Can parse instructions correctly"
-;     (is (= {:operation :read
-;             :params 1
-;             :size 2
-;             :param-types '(:position)}
-;            (parse-instruction 3)))
-;     (is (= {:operation :multiply
-;             :params 3
-;             :size 4
-;             :param-types '(:position :immediate :position)}
-;            (parse-instruction 1002)))))
+(deftest day05-part1-soln-test
+  (testing "Can reproduce the answer for part1"
+    (is (= 12234644 (day05-part1-soln)))))
+
+(deftest day05-part2-soln-test
+  (testing "Can reproduce the answer for part2"
+    (is (= 3508186 (day05-part2-soln)))))

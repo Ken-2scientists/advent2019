@@ -6,8 +6,8 @@
 
 (defn day05-part1-soln
   []
-  (last (intcode/intcode-ex day05-input [1])))
+  (last (intcode/read-output (intcode/intcode-ex day05-input [1]))))
 
 (defn day05-part2-soln
   []
-  (first (intcode/intcode-ex day05-input [5])))
+  (first (intcode/read-output (intcode/intcode-ex day05-input [5]))))
