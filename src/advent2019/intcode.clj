@@ -100,9 +100,6 @@
   (let [instruction (parse-instruction (nth intcode pos))
         {:keys [op name size param-types]} instruction
         args (subvec intcode (inc pos) (+ pos size))]
-    ; (do
-    ;   (println pos name param-types args in out)
-    ;   (op intcode pos param-types args in out))
     (op intcode pos param-types args in out)))
 
 (defn intcode-ex-async
