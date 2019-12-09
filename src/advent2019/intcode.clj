@@ -10,26 +10,29 @@
     :position (nth intcode value)))
 
 (defn write-param
-  [intcode pos value]
-  (assoc intcode pos value))
+  [intcode base type pos value]
+  (let [location (case type
+                   :relative-base (+ base pos)
+                   :position pos)]
+    (assoc intcode location value)))
 
 (defn add
-  [intcode pos base [t1 t2 _] [v1 v2 v3] _ _]
-  [(write-param intcode v3 (+ (read-param intcode base t1 v1)
-                              (read-param intcode base t2 v2)))
+  [intcode pos base [t1 t2 t3] [v1 v2 v3] _ _]
+  [(write-param intcode base t3 v3 (+ (read-param intcode base t1 v1)
+                                      (read-param intcode base t2 v2)))
    (+ 4 pos)
    base])
 
 (defn multiply
-  [intcode pos base [t1 t2 _] [v1 v2 v3] _ _]
-  [(write-param intcode v3 (* (read-param intcode base t1 v1)
-                              (read-param intcode base t2 v2)))
+  [intcode pos base [t1 t2 t3] [v1 v2 v3] _ _]
+  [(write-param intcode base t3 v3 (* (read-param intcode base t1 v1)
+                                      (read-param intcode base t2 v2)))
    (+ 4 pos)
    base])
 
 (defn input
   [intcode pos base [t1] [v1] in _]
-  [(write-param intcode v1 @(s/take! in))
+  [(write-param intcode base t1 v1 @(s/take! in))
    (+ 2 pos)
    base])
 
@@ -54,20 +57,20 @@
     [intcode nextpos base]))
 
 (defn less-than
-  [intcode pos base [t1 t2 _] [v1 v2 v3] _ _]
-  [(write-param intcode v3 (if (< (read-param intcode base t1 v1)
-                                  (read-param intcode base t2 v2))
-                             1
-                             0))
+  [intcode pos base [t1 t2 t3] [v1 v2 v3] _ _]
+  [(write-param intcode base t3 v3 (if (< (read-param intcode base t1 v1)
+                                          (read-param intcode base t2 v2))
+                                     1
+                                     0))
    (+ 4 pos)
    base])
 
 (defn equals
-  [intcode pos base [t1 t2 _] [v1 v2 v3] _ _]
-  [(write-param intcode v3 (if (= (read-param intcode base t1 v1)
-                                  (read-param intcode base t2 v2))
-                             1
-                             0))
+  [intcode pos base [t1 t2 t3] [v1 v2 v3] _ _]
+  [(write-param intcode base t3 v3 (if (= (read-param intcode base t1 v1)
+                                          (read-param intcode base t2 v2))
+                                     1
+                                     0))
    (+ 4 pos)
    base])
 
@@ -112,11 +115,12 @@
   (let [instruction (parse-instruction (nth intcode pos))
         {:keys [op name size param-types]} instruction
         args (subvec intcode (inc pos) (+ pos size))]
-    (op intcode pos base param-types args in out)))
+    (do ;(println name param-type args pos base)
+      (op intcode pos base param-types args in out))))
 
 (defn intcode-ex-async
   [intcode in out]
-  (loop [newintcode intcode pos 0 base 0]
+  (loop [newintcode (into intcode (repeat 1000 0)) pos 0 base 0]
     (if (= 99 (nth newintcode pos))
       [newintcode pos base out]
       (let [[nextcode nextpos nextbase] (apply-op newintcode pos base in out)]

@@ -19,8 +19,18 @@
 
 (deftest simple-op-test
   (testing "Simply add/multiply tests"
-    (is (= output1 (first (intcode-ex input1 []))))
-    (is (= output2 (first (intcode-ex input2 []))))
-    (is (= output3 (first (intcode-ex input3 []))))
-    (is (= output4 (first (intcode-ex input4 []))))
-    (is (= output5 (first (intcode-ex input5 []))))))
+    (is (= output1 (take 12 (first (intcode-ex input1 [])))))
+    (is (= output2 (take 5 (first (intcode-ex input2 [])))))
+    (is (= output3 (take 5 (first (intcode-ex input3 [])))))
+    (is (= output4 (take 6 (first (intcode-ex input4 [])))))
+    (is (= output5 (take 9 (first (intcode-ex input5 [])))))))
+
+(def day09-ex1 [109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99])
+(def day09-ex2 [1102,34915192,34915192,7,4,7,99,0])
+(def day09-ex3 [104,1125899906842624,99])
+
+(deftest day09-extensions
+  (testing "Test extensions introduced on day 09"
+    (is (= day09-ex1 (read-output (intcode-ex day09-ex1 []))))
+    (is (= 1219070632396864 (first (read-output (intcode-ex day09-ex2 [])))))
+    (is (= 1125899906842624 (first (read-output (intcode-ex day09-ex3 [])))))))
