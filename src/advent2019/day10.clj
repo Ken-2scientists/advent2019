@@ -93,6 +93,8 @@
         almost (zipmap (keys grouped) (map (partial helper x) (vals grouped)))
         depth  (apply max (map count (vals almost)))
         onemore (zipmap (keys almost) (map (partial pad-coll depth) (vals almost)))]
-    (->> (apply mapcat vector (vals onemore))
+    (->> (sort-by key onemore)
+         (map second)
+         (apply mapcat vector)
          (filter some?))))
 
