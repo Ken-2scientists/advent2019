@@ -27,11 +27,11 @@
   [[x1 y1] [x2 y2]]
   (cond
     (= x1 x2) (if (> y1 y2)
-                :up
-                :down)
+                [:up]
+                [:down])
     (= y1 y2) (if (> x2 x1)
-                :right
-                :left)
+                [:right]
+                [:left])
     :else [(/ (- y1 y2) (- x2 x1)) (quadrant [x1 y1] [x2 y2])]))
 
 (defn visible-asteroid-count
@@ -50,3 +50,49 @@
 (defn day10-part1-soln
   []
   (best-location day10-input))
+
+(defn angle
+  [[slope quadrant]]
+  (let [angle (case slope
+                :up (/ Math/PI 2)
+                :right 0
+                :down (* 3 (/ Math/PI 2))
+                :left Math/PI
+                (Math/atan slope))]
+    (Math/toDegrees (case quadrant
+                      :q2 (+ Math/PI angle)
+                      :q3 (+ Math/PI angle)
+                      :q4 (+ (/ (* 3 Math/PI) 2) angle)
+                      angle))))
+
+(defn polar->compass
+  [angle]
+  (mod (- 450 angle) 360))
+
+(defn distance
+  [[x1 y1] [x2 y2]]
+  (Math/sqrt (+ (* (- y2 y1) (- y2 y1)) (* (- x2 x1) (- x2 x1)))))
+
+(defn helper
+  [x stuff]
+  (->> (map first stuff)
+       (sort-by (partial distance x))))
+
+(defn pad-coll
+  [size coll]
+  (take size (concat coll (repeat nil))))
+
+(defn asteroid-angles
+  "Find the angle from one asteroid to the others"
+  [x others]
+  (let [others-not-x (filter #(not= x %) others)
+        slopes (map (partial slope x) others-not-x)
+        angles (map (comp polar->compass angle) slopes)
+        grouped (->> (map vector others angles)
+                     (group-by second))
+        almost (zipmap (keys grouped) (map (partial helper x) (vals grouped)))
+        depth  (apply max (map count (vals almost)))
+        onemore (zipmap (keys almost) (map (partial pad-coll depth) (vals almost)))]
+    (->> (apply mapcat vector (vals onemore))
+         (filter some?))))
+
