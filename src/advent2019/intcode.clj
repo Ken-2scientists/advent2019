@@ -17,69 +17,92 @@
     (assoc intcode location value)))
 
 (defn add
-  [intcode pos base [t1 t2 t3] [v1 v2 v3] _ _]
-  [(write-param intcode base t3 v3 (+ (read-param intcode base t1 v1)
-                                      (read-param intcode base t2 v2)))
-   (+ 4 pos)
-   base])
+  [{:keys [intcode base pos]
+    [t1 t2 t3] :param-types
+    [v1 v2 v3] :args
+    :as state}]
+  (assoc state
+         :intcode (write-param intcode base t3 v3 (+ (read-param intcode base t1 v1)
+                                                     (read-param intcode base t2 v2)))
+         :pos (+ 4 pos)))
 
 (defn multiply
-  [intcode pos base [t1 t2 t3] [v1 v2 v3] _ _]
-  [(write-param intcode base t3 v3 (* (read-param intcode base t1 v1)
-                                      (read-param intcode base t2 v2)))
-   (+ 4 pos)
-   base])
+  [{:keys [intcode base pos]
+    [t1 t2 t3] :param-types
+    [v1 v2 v3] :args
+    :as state}]
+  (assoc state
+         :intcode (write-param intcode base t3 v3 (* (read-param intcode base t1 v1)
+                                                     (read-param intcode base t2 v2)))
+         :pos (+ 4 pos)))
 
 (defn input
-  [intcode pos base [t1] [v1] in _]
-  [(write-param intcode base t1 v1 @(s/take! in))
-   (+ 2 pos)
-   base])
+  [{:keys [intcode base pos in]
+    [t1] :param-types
+    [v1] :args
+    :as state}]
+  (assoc state
+         :intcode (write-param intcode base t1 v1 @(s/take! in))
+         :pos (+ 2 pos)))
 
 (defn output
-  [intcode pos base [t1] [v1] _ out]
+  [{:keys [intcode base pos out]
+    [t1] :param-types
+    [v1] :args
+    :as state}]
   (s/put! out (read-param intcode base t1 v1))
-  [intcode (+ 2 pos) base])
+  (assoc state :pos (+ 2 pos)))
 
 (defn jump-if-true
-  [intcode pos base [t1 t2] [v1 v2] _ _]
+  [{:keys [intcode base pos]
+    [t1 t2] :param-types
+    [v1 v2] :args
+    :as state}]
   (let [nextpos (if (zero? (read-param intcode base t1 v1))
                   (+ 3 pos)
                   (read-param intcode base t2 v2))]
-    [intcode nextpos base]))
+    (assoc state :pos nextpos)))
 
 (defn jump-if-false
-  [intcode pos base [t1 t2] [v1 v2] _ _]
+  [{:keys [intcode base pos]
+    [t1 t2] :param-types
+    [v1 v2] :args
+    :as state}]
   (let [nextpos (if (zero? (read-param intcode base t1 v1))
                   (read-param intcode base t2 v2)
                   (+ 3 pos))]
-    [intcode nextpos base]))
+    (assoc state :pos nextpos)))
 
 (defn less-than
-  [intcode pos base [t1 t2 t3] [v1 v2 v3] _ _]
-  [(write-param intcode base t3 v3 (if (< (read-param intcode base t1 v1)
-                                          (read-param intcode base t2 v2))
-                                     1
-                                     0))
-   (+ 4 pos)
-   base])
+  [{:keys [intcode base pos]
+    [t1 t2 t3] :param-types
+    [v1 v2 v3] :args
+    :as state}]
+  (assoc state
+         :intcode (write-param intcode base t3 v3 (if (< (read-param intcode base t1 v1)
+                                                         (read-param intcode base t2 v2))
+                                                    1
+                                                    0))
+         :pos (+ 4 pos)))
 
 (defn equals
-  [intcode pos base [t1 t2 t3] [v1 v2 v3] _ _]
-  [(write-param intcode base t3 v3 (if (= (read-param intcode base t1 v1)
-                                          (read-param intcode base t2 v2))
-                                     1
-                                     0))
-   (+ 4 pos)
-   base])
+  [{:keys [intcode base pos]
+    [t1 t2 t3] :param-types
+    [v1 v2 v3] :args
+    :as state}]
+  (assoc state
+         :intcode (write-param intcode base t3 v3 (if (= (read-param intcode base t1 v1)
+                                                         (read-param intcode base t2 v2))
+                                                    1
+                                                    0))
+         :pos (+ 4 pos)))
 
 (defn offset
-  [intcode pos base [t1] [v1] _ _]
-  [intcode (+ 2 pos) (+ base (read-param intcode base t1 v1))])
-
-(defn stop
-  [_ _ _ _ _ _ out]
-  (s/close! out))
+  [{:keys [intcode base pos]
+    [t1] :param-types
+    [v1] :args
+    :as state}]
+  (assoc state :pos (+ 2 pos) :base (+ base (read-param intcode base t1 v1))))
 
 (def ops {1 {:name :add :op add :param-count 3 :size 4}
           2 {:name :multiply :op multiply :param-count 3 :size 4}
@@ -110,19 +133,22 @@
     (assoc operation :param-types (map param-type param-codes))))
 
 (defn apply-op
-  [intcode pos base in out]
+  [{:keys [intcode pos] :as state}]
   (let [instruction (parse-instruction (nth intcode pos))
         {:keys [op size param-types]} instruction
         args (subvec intcode (inc pos) (+ pos size))]
-    (op intcode pos base param-types args in out)))
+    (op (assoc state :param-types param-types :args args))))
 
 (defn intcode-ex-async
   [intcode in out]
-  (loop [newintcode (into intcode (repeat 1000 0)) pos 0 base 0]
-    (if (= 99 (nth newintcode pos))
-      [newintcode pos base out]
-      (let [[nextcode nextpos nextbase] (apply-op newintcode pos base in out)]
-        (recur nextcode nextpos nextbase)))))
+  (loop [state {:intcode (into intcode (repeat 1000 0))
+                :pos 0
+                :base 0
+                :in in
+                :out out}]
+    (if (= 99 (nth (:intcode state) (:pos state)))
+      state
+      (recur (apply-op state)))))
 
 (defn intcode-ex
   [intcode inputs]
@@ -131,6 +157,5 @@
     (intcode-ex-async intcode in out)))
 
 (defn read-output
-  "Read from the output stream. Args are [intcode pos base out]"
-  [[_ _ _ out]]
+  [{:keys [out]}]
   (s/stream->seq out 100))
