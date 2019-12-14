@@ -62,7 +62,7 @@
     (Math/toDegrees (case quadrant
                       :q2 (+ Math/PI angle)
                       :q3 (+ Math/PI angle)
-                      :q4 (+ (/ (* 3 Math/PI) 2) angle)
+                      :q4 (+ (* 2 Math/PI) angle)
                       angle))))
 
 (defn polar->compass
@@ -71,13 +71,11 @@
 
 (defn distance
   [[x1 y1] [x2 y2]]
-  ;(Math/sqrt (+ (* (- y2 y1) (- y2 y1)) (* (- x2 x1) (- x2 x1))))
   (+ (Math/abs (- y2 y1)) (Math/abs (- x2 x1))))
 
 (defn sort-by-distance
-  [x stuff]
-  (->> (map first stuff)
-       (sort-by (partial distance x))))
+  [x others]
+  (sort-by (partial distance x) others))
 
 (defn pad-coll
   [size coll]
@@ -90,14 +88,19 @@
         slopes (map (partial slope x) others-not-x)
         angles (map (comp polar->compass angle) slopes)
         by-angle (->> (map vector others-not-x angles)
-                      (group-by second))
-        by-angle-sorted (zipmap (keys by-angle)
-                                (map (partial sort-by-distance x) (vals by-angle)))
+                      (group-by second)
+                      (u/fmap #(map first %)))
+        by-angle-sorted (u/fmap (partial sort-by-distance x) by-angle)
         depth  (apply max (map count (vals by-angle-sorted)))
-        full-matrix (zipmap (keys by-angle-sorted)
-                            (map (partial pad-coll depth) (vals by-angle-sorted)))]
+        full-matrix (u/fmap (partial pad-coll depth) by-angle-sorted)]
     (->> (sort-by key full-matrix)
          (map second)
          (apply mapcat vector)
          (filter some?))))
+
+(defn day10-part2-soln
+  []
+  (let [pos (first (day10-part1-soln))
+        [x y] (nth (asteroids-laser-order pos day10-input) 199)]
+    (+ (* 100 x) y)))
 

@@ -16,3 +16,8 @@
   [filename]
   (-> filename puzzle-input first list-line))
 
+(defn fmap
+  "Applies the function f to the values of the map m"
+  [f m]
+  (zipmap (keys m) (map f (vals m))))
+
