@@ -71,9 +71,10 @@
 
 (defn distance
   [[x1 y1] [x2 y2]]
-  (Math/sqrt (+ (* (- y2 y1) (- y2 y1)) (* (- x2 x1) (- x2 x1)))))
+  ;(Math/sqrt (+ (* (- y2 y1) (- y2 y1)) (* (- x2 x1) (- x2 x1))))
+  (+ (Math/abs (- y2 y1)) (Math/abs (- x2 x1))))
 
-(defn helper
+(defn sort-by-distance
   [x stuff]
   (->> (map first stuff)
        (sort-by (partial distance x))))
@@ -82,18 +83,20 @@
   [size coll]
   (take size (concat coll (repeat nil))))
 
-(defn asteroid-angles
-  "Find the angle from one asteroid to the others"
+(defn asteroids-laser-order
+  "Find the order in which the asteroids will be destroyed by the laser"
   [x others]
   (let [others-not-x (filter #(not= x %) others)
         slopes (map (partial slope x) others-not-x)
         angles (map (comp polar->compass angle) slopes)
-        grouped (->> (map vector others angles)
-                     (group-by second))
-        almost (zipmap (keys grouped) (map (partial helper x) (vals grouped)))
-        depth  (apply max (map count (vals almost)))
-        onemore (zipmap (keys almost) (map (partial pad-coll depth) (vals almost)))]
-    (->> (sort-by key onemore)
+        by-angle (->> (map vector others-not-x angles)
+                      (group-by second))
+        by-angle-sorted (zipmap (keys by-angle)
+                                (map (partial sort-by-distance x) (vals by-angle)))
+        depth  (apply max (map count (vals by-angle-sorted)))
+        full-matrix (zipmap (keys by-angle-sorted)
+                            (map (partial pad-coll depth) (vals by-angle-sorted)))]
+    (->> (sort-by key full-matrix)
          (map second)
          (apply mapcat vector)
          (filter some?))))

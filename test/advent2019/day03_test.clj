@@ -1,6 +1,6 @@
 (ns advent2019.day03-test
-  (:require [clojure.test :refer :all]
-            [advent2019.day03 :refer :all]))
+  (:require [clojure.test :refer [deftest testing is]]
+            [advent2019.day03 :as t]))
 
 (def path1-inst ["R8","U5","L5","D3"])
 (def path1-trace
@@ -18,7 +18,7 @@
 
 (deftest path-trace-test
   (testing "Convert instructions into the wire path"
-    (is (= path1-trace (trace-wire-path path1-inst)))))
+    (is (= path1-trace (t/trace-wire-path path1-inst)))))
 
 (def input1 [["R8","U5","L5","D3"]
              ["U7","R6","D4","L4"]])
@@ -37,20 +37,20 @@
 
 (deftest part1-test
   (testing "Find lower-leftmost intersection of the wire paths"
-    (is (= dist1 (closest-intersection-dist input1)))
-    (is (= dist2 (closest-intersection-dist input2)))
-    (is (= dist3 (closest-intersection-dist input3)))))
+    (is (= dist1 (t/closest-intersection-dist input1)))
+    (is (= dist2 (t/closest-intersection-dist input2)))
+    (is (= dist3 (t/closest-intersection-dist input3)))))
 
 (deftest part2-test
   (testing "Find fewest number of steps to first intersection of the wire paths"
-    (is (= steps1 (shortest-steps-to-intersection input1)))
-    (is (= steps2 (shortest-steps-to-intersection input2)))
-    (is (= steps3 (shortest-steps-to-intersection input3)))))
+    (is (= steps1 (t/shortest-steps-to-intersection input1)))
+    (is (= steps2 (t/shortest-steps-to-intersection input2)))
+    (is (= steps3 (t/shortest-steps-to-intersection input3)))))
 
 (deftest day03-part1-soln-test
   (testing "Can reproduce the answer for part1"
-    (is (= 375 (day03-part1-soln)))))
+    (is (= 375 (t/day03-part1-soln)))))
 
 (deftest day03-part2-soln-test
   (testing "Can reproduce the answer for part2"
-    (is (= 14746 (day03-part2-soln)))))
+    (is (= 14746 (t/day03-part2-soln)))))

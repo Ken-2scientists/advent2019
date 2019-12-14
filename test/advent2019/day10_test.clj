@@ -1,16 +1,16 @@
 (ns advent2019.day10-test
-  (:require [clojure.test :refer :all]
-            [advent2019.day10 :refer :all]))
+  (:require [clojure.test :refer [deftest testing is]]
+            [advent2019.day10 :as t]))
 
 
-(def d10-s1 (parse-map
+(def d10-s1 (t/parse-map
              [".#..#"
               "....."
               "#####"
               "....#"
               "...##"]))
 
-(def d10-s2 (parse-map
+(def d10-s2 (t/parse-map
              ["......#.#."
               "#..#.#...."
               "..#######."
@@ -22,7 +22,7 @@
               "##...#..#."
               ".#....####"]))
 
-(def d10-s3 (parse-map
+(def d10-s3 (t/parse-map
              ["#.#...#.#."
               ".###....#."
               ".#....#..."
@@ -34,7 +34,7 @@
               "......#..."
               ".####.###."]))
 
-(def d10-s4 (parse-map
+(def d10-s4 (t/parse-map
              [".#..#..###"
               "####.###.#"
               "....###.#."
@@ -46,7 +46,7 @@
               ".##...##.#"
               ".....#.#.."]))
 
-(def d10-s5 (parse-map
+(def d10-s5 (t/parse-map
              [".#..##.###...#######"
               "##.############..##."
               ".#.######.########.#"
@@ -68,13 +68,30 @@
               "#.#.#.#####.####.###"
               "###.##.####.##.#..##"]))
 
+(def d10-s6 (t/parse-map
+             [".#....#####...#.."
+              "##...##.#####..##"
+              "##...#...#.#####."
+              "..#.....#...###.."
+              "..#.#.....#....##"]))
+
+(def d10-s6-soln
+  [[8,1] [9,0] [9,1] [10,0] [9,2] [11,1] [12,1] [11,2] [15,1]
+   [12,2] [13,2] [14,2] [15,2] [12,3] [16,4] [15,4] [10,4] [4,4]
+   [2,4] [2,3] [0,2] [1,2] [0,1] [1,1] [5,2] [1,0] [5,1]
+   [6,1] [6,0] [7,0] [8,0] [10,1] [14,0] [16,1] [13,3] [14,3]])
+
 (deftest best-location-test
   (testing "Can find best location and max visible count"
-    (is (= '([3,4] 8) (best-location d10-s1)))
-    (is (= '([5,8] 33) (best-location d10-s2)))
-    (is (= '([1,2] 35) (best-location d10-s3)))
-    (is (= '([6,3] 41) (best-location d10-s4)))
-    (is (= '([11,13] 210) (best-location d10-s5)))))
+    (is (= '([3,4] 8) (t/best-location d10-s1)))
+    (is (= '([5,8] 33) (t/best-location d10-s2)))
+    (is (= '([1,2] 35) (t/best-location d10-s3)))
+    (is (= '([6,3] 41) (t/best-location d10-s4)))
+    (is (= '([11,13] 210) (t/best-location d10-s5)))))
+
+(deftest laser-test
+  (testing "Laser hits the asteroids in the correct order"
+    (is (= d10-s6-soln (t/asteroids-laser-order [8,3] d10-s6)))))
 
 ; (deftest day10-part1-soln-test
 ;   (testing "Can reproduce the answer for part1"
