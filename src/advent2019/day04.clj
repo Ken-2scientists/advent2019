@@ -1,6 +1,6 @@
 (ns advent2019.day04)
 
-(def any? (complement not-any?))
+(def my-any? (complement not-any?))
 
 (defn digits
   "Converts an integer into a seq of its digits in order"
@@ -17,7 +17,7 @@
 
 (defn one-matching-pair?
   [digits]
-  (any? #(>= % 2) (vals (frequencies digits))))
+  (my-any? #(>= % 2) (vals (frequencies digits))))
 
 (def all-conds-part1?
   (every-pred six-digit? not-decreasing-digits? one-matching-pair?))
@@ -34,7 +34,7 @@
 
 (defn pair-not-in-larger-group?
   [digits]
-  (any? #(= % 2) (vals (frequencies digits))))
+  (my-any? #(= % 2) (vals (frequencies digits))))
 
 (def all-conds-part2?
   (every-pred six-digit? not-decreasing-digits? pair-not-in-larger-group?))

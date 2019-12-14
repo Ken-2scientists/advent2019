@@ -38,9 +38,8 @@
 
 (defn output
   [intcode pos base [t1] [v1] _ out]
-  (do
-    (s/put! out (read-param intcode base t1 v1))
-    [intcode (+ 2 pos) base]))
+  (s/put! out (read-param intcode base t1 v1))
+  [intcode (+ 2 pos) base])
 
 (defn jump-if-true
   [intcode pos base [t1 t2] [v1 v2] _ _]
@@ -50,7 +49,7 @@
     [intcode nextpos base]))
 
 (defn jump-if-false
-  [intcode pos base [t1 t2] [v1 v2] in out]
+  [intcode pos base [t1 t2] [v1 v2] _ _]
   (let [nextpos (if (zero? (read-param intcode base t1 v1))
                   (read-param intcode base t2 v2)
                   (+ 3 pos))]
@@ -113,10 +112,9 @@
 (defn apply-op
   [intcode pos base in out]
   (let [instruction (parse-instruction (nth intcode pos))
-        {:keys [op name size param-types]} instruction
+        {:keys [op size param-types]} instruction
         args (subvec intcode (inc pos) (+ pos size))]
-    (do ;(println name param-type args pos base)
-      (op intcode pos base param-types args in out))))
+    (op intcode pos base param-types args in out)))
 
 (defn intcode-ex-async
   [intcode in out]
@@ -133,5 +131,6 @@
     (intcode-ex-async intcode in out)))
 
 (defn read-output
-  [[intcode pos base out]]
-  (s/stream->seq out 1000))
+  "Read from the output stream. Args are [intcode pos base out]"
+  [[_ _ _ out]]
+  (s/stream->seq out 100))

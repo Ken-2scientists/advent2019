@@ -13,21 +13,21 @@
 
 (defn amplifier-chain
   [intcode phases]
-  (let [streams (for [x (range (inc (count phases)))] (s/stream))]
-    (do (doall (map s/put! streams phases))
-        (s/put! (first streams) 0)
-        (let [futures (doall (map (partial run-intcode intcode) (partition 2 1 streams)))]
-          @(last futures))
-        @(s/take! (last streams)))))
+  (let [streams (for [_ (range (inc (count phases)))] (s/stream))]
+    (doall (map s/put! streams phases))
+    (s/put! (first streams) 0)
+    (let [futures (doall (map (partial run-intcode intcode) (partition 2 1 streams)))]
+      @(last futures))
+    @(s/take! (last streams))))
 
 (defn amplifier-loop
   [intcode phases]
-  (let [streams (for [x (range (count phases))] (s/stream))]
-    (do (doall (map s/put! streams phases))
-        (s/put! (first streams) 0)
-        (let [futures (doall (map (partial run-intcode intcode) (partition 2 1 streams streams)))]
-          @(last futures))
-        @(s/take! (first streams)))))
+  (let [streams (for [_ (range (count phases))] (s/stream))]
+    (doall (map s/put! streams phases))
+    (s/put! (first streams) 0)
+    (let [futures (doall (map (partial run-intcode intcode) (partition 2 1 streams streams)))]
+      @(last futures))
+    @(s/take! (first streams))))
 
 (defn max-phases
   [intcode amplifier phase-options]
