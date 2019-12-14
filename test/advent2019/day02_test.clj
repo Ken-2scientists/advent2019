@@ -4,7 +4,7 @@
 
 (deftest day02-part1-soln-test
   (testing "Can reproduce the answer for part1"
-    (is (= 3085697 (t/ay02-part1-soln)))))
+    (is (= 3085697 (t/day02-part1-soln)))))
 
 (deftest day02-part2-soln-test
   (testing "Can reproduce the answer for part2"
