@@ -1,5 +1,6 @@
 (ns advent2019.utils
-  (:require [clojure.java.io :as io]))
+  (:require [clojure.string :as str]
+            [clojure.java.io :as io]))
 
 (defn puzzle-input
   [filename]
@@ -20,4 +21,15 @@
   "Applies the function f to the values of the map m"
   [f m]
   (zipmap (keys m) (map f (vals m))))
+
+(defn kmap
+  "Applies the function f to the keys of the map m"
+  [f m]
+  (zipmap (map f (keys m)) (vals m)))
+
+(defn pprint-image
+  [image width]
+  (let [legible-pixels (replace {0 " " 1 "*"} image)]
+    (doseq [line (partition width legible-pixels)]
+      (println (str/join line)))))
 
