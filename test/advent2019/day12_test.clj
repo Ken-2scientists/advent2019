@@ -16,5 +16,5 @@
 
 (deftest total-energy-test
   (testing "Can find the total energy after a number of time steps"
-    (is (= 179 (t/total-energy (t/simulate d12-s1 10))))
-    (is (= 1940 (t/total-energy (t/simulate d12-s2 100))))))
+    (is (= 179 (t/total-energy (nth (t/simulate d12-s1) 10))))
+    (is (= 1940 (t/total-energy (nth (t/simulate d12-s2) 100))))))
