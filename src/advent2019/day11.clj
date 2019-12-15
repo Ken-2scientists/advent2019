@@ -27,7 +27,6 @@
    paint
    turn]
   (let [newhull (assoc hull position paint)]
-    (println newhull)
     (merge state
            {:hull newhull}
            (case turn
@@ -36,17 +35,19 @@
 
 (defn robot-step
   [in out {:keys [hull position] :as state}]
-  (let [_ @(s/put! in (get hull position 0))
-        paint @(s/take! out)
-        turn @(s/take! out)]
-    (move-and-paint state paint turn)))
+  (let [_ (s/put! in (get hull position 0))
+        paint @(s/try-take! out 100)
+        turn @(s/try-take! out 100)]
+    (if (and paint turn)
+      (move-and-paint state paint turn)
+      state)))
 
 (defn paint-bot
   [intcode start]
   (let [in (s/stream)
         out (s/stream)
         stepper (partial robot-step in out)
-        program (intcode/intcode-ex-async intcode in out)]
+        program (d/future (intcode/intcode-ex-async intcode in out))]
     (loop [state {:hull {[0,0] start} :position [0,0] :direction :up}]
       (if (realized? program)
         state
