@@ -8,10 +8,11 @@
    [4 -8 8]
    [3 5 -1]])
 
-(def d12-s2 [[-8 -10 0]
-             [5 5 10]
-             [2 -7 3]
-             [9 -8 -3]])
+(def d12-s2
+  [[-8 -10 0]
+   [5 5 10]
+   [2 -7 3]
+   [9 -8 -3]])
 
 (deftest total-energy-test
   (testing "Can find the total energy after a number of time steps"

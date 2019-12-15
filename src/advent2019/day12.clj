@@ -13,9 +13,6 @@
 (def day12-input
   (map parse-coord (u/puzzle-input "day12-input.txt")))
 
-(def intial-velocity
-  (repeat 4 (repeat 3 0)))
-
 (defn rotations
   [coll]
   (take (count coll) (partition (count coll) 1 (cycle coll))))
@@ -51,13 +48,12 @@
         new-moons (add-deltas moons new-vels)]
     [new-moons new-vels]))
 
+(def initial-velocity
+  (repeat 4 (repeat 3 0)))
 
 (defn simulate
-  [moons steps]
-  (loop [update [moons intial-velocity] step 0]
-    (if (= step steps)
-      update
-      (recur (next-step update) (inc step)))))
+  [moons]
+  (iterate next-step [moons initial-velocity]))
 
 (defn energy
   [moon]
@@ -71,4 +67,4 @@
 
 (defn day12-part1-soln
   []
-  (total-energy (simulate day12-input 1000)))
+  (total-energy (nth (simulate day12-input) 1000)))
