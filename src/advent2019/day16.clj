@@ -16,24 +16,52 @@
 (def pattern [0 1 0 -1])
 
 (defn digit-calc
-  [num pattern]
+  [pattern num]
   (mod (Math/abs (reduce + (map * num pattern))) 10))
 
 (defn patterns
   [size]
   (for [x (range size)]
-    (rest (cycle (mapcat (partial repeat (inc x)) pattern)))))
+    (take size (rest (cycle (mapcat (partial repeat (inc x)) pattern))))))
+
+(defn pattern-fn
+  [pattern]
+  (fn [num]
+    (digit-calc pattern num)))
+
+(defn pattern-fns
+  [size]
+  (let [patterns (for [x (range size)]
+                   (rest (cycle (mapcat (partial repeat (inc x)) pattern))))]
+    (map pattern-fn patterns)))
 
 (def patterns-memo (memoize patterns))
 
 (defn phase
   [nums]
   (let [patterns (patterns-memo (count nums))]
-    (map (partial digit-calc nums) patterns)))
+    (pmap #(digit-calc % nums) patterns)))
 
 (defn phase2
   [patterns nums]
-  (map (partial digit-calc nums) patterns))
+  (pmap #(digit-calc % nums) patterns))
+
+(defn phase3
+  [pattern-fns nums]
+  (pmap #(% nums) pattern-fns))
+
+(defn run-phases3
+  [nums phases]
+  (let [size (count nums)
+        fns (pattern-fns size)
+        doit (partial phase3 fns)]
+    (nth (iterate doit nums) phases)))
+
+(defn mmul
+  [m1 m2]
+  (map (fn [row]
+         (map (fn [col]
+                (reduce + (map * row col))) m2)) m1))
 
 (defn run-phases
   [nums phases]
