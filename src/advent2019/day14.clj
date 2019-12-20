@@ -7,15 +7,15 @@
 (defn parse-component
   [comp-str]
   (let [[qty chem] (str/split comp-str #"\s+")]
-    {(keyword chem) (read-string qty)}))
+    [(keyword chem) (read-string qty)]))
 
 (defn parse-line
   [line]
   (let [[lhs rhs] (str/split line #" \=\> ")
         lhs-split (str/split lhs #", ")
         components (map parse-component lhs-split)
-        [chem qty] (first (parse-component rhs))]
-    {chem {:qty (/ 1 qty) :comps components}}))
+        [chem qty] (parse-component rhs)]
+    {chem {:min-qty qty :comps components}}))
 
 (defn reactions
   [input]
@@ -25,6 +25,14 @@
 
 (def day14-input
   (reactions (u/puzzle-input "day14-input.txt")))
+
+(def d14-s1 (reactions
+             ["10 ORE => 10 A"
+              "1 ORE => 1 B"
+              "7 A, 1 B => 1 C"
+              "7 A, 1 C => 1 D"
+              "7 A, 1 D => 1 E"
+              "7 A, 1 E => 1 FUEL"]))
 
 (def d14-s3 (reactions
              ["157 ORE => 5 NZVS"
@@ -37,23 +45,63 @@
               "165 ORE => 2 GPVTF"
               "3 DCFZ, 7 NZVS, 5 HKGWZ, 10 PSHF => 8 KHKGT"]))
 
-(defn requirements
-  [reactions cumqty component]
-  (let [{:keys [qty comps]} (get reactions component)]
-    (println (key (ffirst comps)) component)
-    (if (= 1 (count comps))
-      (let [[k v] (ffirst comps)]
-        (if (= :ORE k)
-          [{{component v} (* cumqty qty)}]
-          (requirements reactions (* cumqty qty v) {k v})))
-      (mapcat #(requirements reactions (* cumqty qty (val (first %))) (key (first %))) comps))))
+; (defn requirements
+;   [reactions cumqty component]
+;   (let [{:keys [qty comps]} (get reactions component)]
+;     (println (key (ffirst comps)) component)
+;     (if (= 1 (count comps))
+;       (let [[k v] (ffirst comps)]
+;         (if (= :ORE k)
+;           [{{component v} (* cumqty qty)}]
+;           (requirements reactions (* cumqty qty v) {k v})))
+;       (mapcat #(requirements reactions (* cumqty qty (val (first %))) (key (first %))) comps))))
+
+; (defn ore-amount
+;   [reactions]
+;   (let [reqs (requirements reactions 1 :FUEL)
+;         amts (->> reqs
+;                   (group-by ffirst)
+;                   (u/fmap #(reduce + (map (comp second first) %)))
+;                   (u/fmap #(Math/ceil %)))]
+;     (println amts)
+;     (int (reduce + (map (fn [[k v]] (* (val (first k)) v)) amts)))))
+
+(declare fulfill-requirements)
+
+(defn fulfill-requirement
+  [reactions inventory claimed min-qty [chemical qty]]
+  (println min-qty chemical qty)
+  (println "BEFORE" chemical)
+  (println @inventory)
+  (println @claimed)
+  (let [current (get @claimed chemical)
+        demand (* min-qty (int (Math/ceil (/ (- qty current) min-qty))))
+        remaining (- demand current)]
+    (if (= :ORE chemical)
+      (do
+        (swap! inventory assoc chemical demand)
+        (swap! claimed assoc chemical (- demand current))
+
+        demand)
+      (let [below (reduce + (fulfill-requirements reactions inventory claimed chemical))]
+        (swap! inventory assoc chemical below)
+        (swap! claimed assoc chemical (- demand current))
+        below)))
+  (println "AFTER")
+  (println @inventory)
+  (println @claimed))
+
+(defn fulfill-requirements
+  [reactions inventory claimed chemical]
+  (let [{:keys [min-qty comps]} (get reactions chemical)]
+    (map (partial fulfill-requirement reactions inventory claimed min-qty) comps)))
+
+(defn empty-state
+  [reactions]
+  (zipmap (conj (keys reactions) :ORE) (repeat 0)))
 
 (defn ore-amount
   [reactions]
-  (let [reqs (requirements reactions 1 :FUEL)
-        amts (->> reqs
-                  (group-by ffirst)
-                  (u/fmap #(reduce + (map (comp second first) %)))
-                  (u/fmap #(Math/ceil %)))]
-    (println amts)
-    (int (reduce + (map (fn [[k v]] (* (val (first k)) v)) amts)))))
+  (let [inventory (atom (empty-state reactions))
+        claimed (atom (empty-state reactions))]
+    (fulfill-requirements reactions inventory claimed :C)))
