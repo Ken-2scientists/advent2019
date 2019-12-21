@@ -6,10 +6,10 @@
 
 (defn tractor-beam
   [intcode size]
-  (for [y (range size)
-        x (range size)]
-    (intcode/read-output (intcode/intcode-ex intcode [x y]))))
+  (flatten (for [y (range size)
+                 x (range size)]
+             (intcode/read-output (intcode/intcode-ex intcode [x y])))))
 
 (defn day19-part1-soln
   []
-  (count (filter pos? (flatten (tractor-beam day19-input 50)))))
+  (count (filter pos? (tractor-beam day19-input 50))))

@@ -158,4 +158,4 @@
 
 (defn read-output
   [{:keys [out]}]
-  (s/stream->seq out 100))
+  (s/stream->seq out 25))
