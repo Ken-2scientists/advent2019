@@ -68,3 +68,45 @@
 (defn day12-part1-soln
   []
   (total-energy (nth (simulate day12-input) 1000)))
+
+(defn index-of-first
+  [item coll]
+  (->> coll
+       (map-indexed vector)
+       (filter #(= item (second %)))
+       ffirst))
+
+(def initial-velocity-axis
+  (repeat 4 (repeat 1 0)))
+
+(defn simulate-axis
+  [moons]
+  (iterate next-step [moons initial-velocity-axis]))
+
+(defn axis-period
+  [axis moons]
+  (let [axis-moons (case axis
+                     :x (map (comp vector first) moons)
+                     :y (map (comp vector second) moons)
+                     :z (map (comp vector last) moons))]
+    (inc (index-of-first 0 (rest (map total-energy (simulate-axis axis-moons)))))))
+
+(defn gcd
+  [a b]
+  (if (zero? b)
+    a
+    (recur b (mod a b))))
+
+(defn lcm
+  [a b]
+  (/ (* a b) (gcd a b)))
+
+(defn lcmv [& v] (reduce lcm v))
+
+(defn recurrence-period
+  [moons]
+  (* 2 (apply lcmv (pmap axis-period [:x :y :z] (repeat moons)))))
+
+(defn day12-part2-soln
+  []
+  (recurrence-period day12-input))
