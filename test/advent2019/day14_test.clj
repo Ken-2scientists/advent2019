@@ -70,3 +70,7 @@
     (is (= 13312 (t/ore-amount d14-s3)))
     (is (= 180697 (t/ore-amount d14-s4)))
     (is (= 2210736 (t/ore-amount d14-s5)))))
+
+(deftest day14-part1-soln-test
+  (testing "Can reproduce the solution to part 1"
+    (is (= 278404 (t/day14-part1-soln)))))
