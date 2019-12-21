@@ -74,3 +74,13 @@
 (deftest day14-part1-soln-test
   (testing "Can reproduce the solution to part 1"
     (is (= 278404 (t/day14-part1-soln)))))
+
+(deftest max-fuel-test
+  (testing "Can find the maximum amount of fuel that can be made from a fixed amount of ore"
+    (is (= 82892753 (t/max-fuel d14-s3)))
+    (is (= 5586022 (t/max-fuel d14-s4)))
+    (is (= 460664 (t/max-fuel d14-s5)))))
+
+(deftest day14-part2-soln-test
+  (testing "Can reproduce the solution to part 2"
+    (is (= 4436981 (t/day14-part2-soln)))))

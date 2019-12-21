@@ -35,25 +35,16 @@
 
 (defn order-if-needed
   [recipes inventory used [chemical qty]]
-  ;(println "Need " qty " of " chemical ", have " (get @inventory chemical))
-  ; (println @inventory)
-  ; (println @used)
   (if (= :ORE chemical)
     (swap! inventory update chemical #(+ % qty))
     (let [{:keys [min-qty comps]} (get recipes chemical)
           available (get @inventory chemical)
-          order-amount (int (Math/ceil (/ (- qty available) min-qty)))
-          multiplier (int (Math/ceil (/ qty min-qty)))]
+          order-amount (long (Math/ceil (/ (- qty available) min-qty)))]
       (doseq [[x q] (partition 2 comps)]
         (when (> (* order-amount q) (get @inventory x))
-          ;(println chemical " needs " (* order-amount q) " of " x)
           (order-if-needed recipes inventory used [x (* order-amount q)]))
-        (consume inventory used [x (* order-amount q)])
-        ;(println chemical " used " (* order-amount q) " of " x)
-        )
-      (swap! inventory update chemical #(+ % (* order-amount min-qty)))
-      ;(println "Made " (* order-amount min-qty) " of " chemical ", now have " (get @inventory chemical))
-      )))
+        (consume inventory used [x (* order-amount q)]))
+      (swap! inventory update chemical #(+ % (* order-amount min-qty))))))
 
 (defn empty-state
   [recipes]
@@ -68,9 +59,38 @@
      :consumed @used}))
 
 (defn ore-amount
-  [recipes]
-  (get-in (ingredients-used recipes :FUEL 1) [:consumed :ORE]))
+  ([recipes]
+   (ore-amount recipes 1))
+  ([recipes amount]
+   (get-in (ingredients-used recipes :FUEL amount) [:consumed :ORE])))
 
 (defn day14-part1-soln
   []
   (ore-amount day14-input))
+
+(def available-ore 1000000000000)
+
+(defn binary-search
+  ([f target start end]
+   (let [fixed-end (if (even? (- end start))
+                     (inc end)
+                     end)]
+     (loop [low start high fixed-end]
+       (if (= high (inc low))
+         [low (f low) high (f high)]
+         (let [middle (int (+ low (/ (- high low) 2)))]
+           (if (< (f middle) target)
+             (recur middle high)
+             (recur low middle))))))))
+
+(defn max-fuel
+  [recipes]
+  (let [single-fuel-ore (ore-amount recipes)
+        start-guess (int (/ available-ore single-fuel-ore))
+        end-guess (int (* 1.3 start-guess))]
+    (first (binary-search (partial ore-amount recipes) available-ore start-guess end-guess))))
+
+(defn day14-part2-soln
+  []
+  (max-fuel day14-input))
+
