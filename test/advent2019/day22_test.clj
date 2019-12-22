@@ -40,6 +40,12 @@
   (testing "Can reproduce the answer for part1"
     (is (= 2306 (t/day22-part1-soln)))))
 
+(deftest multiple-shuffle-test
+  (testing "Correctly identify the card in given position after many repeated shuffles"
+    (is (= 9 (t/card-after-multiple-shuffles 10 d22-s1 5 3)))
+    (is (= 8 (t/card-after-multiple-shuffles 10 d22-s2 5 5)))
+    (is (= 8 (t/card-after-multiple-shuffles 10 d22-s3 10 0)))))
+
 ; (deftest day22-part2-soln-test
 ;   (testing "Can reproduce the answer for part2"
 ;     (is (= 73439 (t/day22-part2-soln)))))

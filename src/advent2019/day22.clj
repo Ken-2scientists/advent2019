@@ -39,11 +39,24 @@
     :increment (increment stack arg size)))
 
 (defn shuffle-deck
-  [size steps]
-  (let [stack (range size)]
-    (reduce (partial do-step size) stack steps)))
+  ([size steps]
+   (shuffle-deck size steps (range size)))
+  ([size steps deck]
+   (reduce (partial do-step size) deck steps)))
 
 (defn day22-part1-soln
   []
-  (u/index-of (shuffle-deck 10007 day22-input) 2019))
+  (u/index-of 2019 (shuffle-deck 10007 day22-input)))
+
+(defn card-after-multiple-shuffles
+  [size steps times position]
+  (let [one-shuffle (zipmap (range size) (shuffle-deck size steps))]
+    (first (drop times (iterate one-shuffle position)))))
+
+(def card-count 119315717514047)
+(def shuffle-count 101741582076661)
+
+(defn day22-part2-soln
+  []
+  (card-after-multiple-shuffles card-count day22-input shuffle-count 2020))
 
