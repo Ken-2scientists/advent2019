@@ -33,3 +33,7 @@
     (doseq [line (partition width legible-pixels)]
       (println (str/join line)))))
 
+(defn index-of
+  [coll x]
+  (ffirst (filter #(= x (second %)) (map-indexed (fn [idx v] [idx v]) coll))))
+
