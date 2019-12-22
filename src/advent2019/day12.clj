@@ -69,13 +69,6 @@
   []
   (total-energy (nth (simulate day12-input) 1000)))
 
-(defn index-of-first
-  [item coll]
-  (->> coll
-       (map-indexed vector)
-       (filter #(= item (second %)))
-       ffirst))
-
 (def initial-velocity-axis
   (repeat 4 (repeat 1 0)))
 
@@ -89,7 +82,7 @@
                      :x (map (comp vector first) moons)
                      :y (map (comp vector second) moons)
                      :z (map (comp vector last) moons))]
-    (inc (index-of-first 0 (rest (map total-energy (simulate-axis axis-moons)))))))
+    (inc (u/index-of 0 (rest (map total-energy (simulate-axis axis-moons)))))))
 
 (defn gcd
   [a b]
