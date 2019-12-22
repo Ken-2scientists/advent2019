@@ -48,10 +48,46 @@
   []
   (u/index-of 2019 (shuffle-deck 10007 day22-input)))
 
+
+(defn deal-single
+  [size pos]
+  (- (dec size) pos))
+
+(defn cut-single
+  [size arg pos]
+  (if (pos? arg)
+    (if (< pos (- size arg))
+      (+ pos arg)
+      (- pos (- size arg)))
+    (if (< pos (- arg))
+      (+ pos (+ size arg))
+      (+ pos arg))))
+
+(defn increment-single
+  [size arg pos]
+  (/ (first (filter #(= pos (mod % size)) (map #(* arg %) (range size)))) arg))
+
+(defn do-step-single
+  [size pos [cmd arg]]
+  (println cmd arg)
+  (case cmd
+    :deal (deal-single size pos)
+    :cut (cut-single size arg pos)
+    :increment (increment-single size arg pos)))
+
+(defn shuffle-deck-single
+  [size steps pos]
+  (reduce (partial do-step-single size) pos (reverse steps)))
+
 (defn card-after-multiple-shuffles
   [size steps times position]
-  (let [one-shuffle (zipmap (range size) (shuffle-deck size steps))]
-    (first (drop times (iterate one-shuffle position)))))
+  (let [one-shuffle (zipmap (range size) (shuffle-deck size steps))
+        _ (println "Lookup map created")
+        recurrence-period (inc (u/index-of position (drop 1 (iterate one-shuffle position))))
+        _ (println "Reccurence period identified:" recurrence-period)
+        remaining (mod times recurrence-period)
+        _ (println "Will simulate " remaining " steps")]
+    (first (drop remaining (iterate one-shuffle position)))))
 
 (def card-count 119315717514047)
 (def shuffle-count 101741582076661)
