@@ -14,7 +14,6 @@
 (def day22-input
   (map parse-line (u/puzzle-input "day22-input.txt")))
 
-
 (defn deal
   [stack]
   (reverse stack))
@@ -65,11 +64,10 @@
 
 (defn increment-single
   [size arg pos]
-  (/ (first (filter #(= pos (mod % size)) (map #(* arg %) (range size)))) arg))
+  (u/mod-quot pos arg size))
 
 (defn do-step-single
   [size pos [cmd arg]]
-  (println cmd arg)
   (case cmd
     :deal (deal-single size pos)
     :cut (cut-single size arg pos)
@@ -79,15 +77,15 @@
   [size steps pos]
   (reduce (partial do-step-single size) pos (reverse steps)))
 
+
 (defn card-after-multiple-shuffles
   [size steps times position]
-  (let [one-shuffle (zipmap (range size) (shuffle-deck size steps))
-        _ (println "Lookup map created")
-        recurrence-period (inc (u/index-of position (drop 1 (iterate one-shuffle position))))
+  (let [one-shuffle-lookup (partial shuffle-deck-single size steps)
+        recurrence-period (inc (u/index-of position (drop 1 (iterate one-shuffle-lookup position))))
         _ (println "Reccurence period identified:" recurrence-period)
         remaining (mod times recurrence-period)
         _ (println "Will simulate " remaining " steps")]
-    (first (drop remaining (iterate one-shuffle position)))))
+    (first (drop remaining (iterate one-shuffle-lookup position)))))
 
 (def card-count 119315717514047)
 (def shuffle-count 101741582076661)

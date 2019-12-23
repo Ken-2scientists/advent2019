@@ -37,3 +37,17 @@
   [x coll]
   (ffirst (filter #(= x (second %)) (map-indexed vector coll))))
 
+(defn mod-inverse
+  "Computes the multiplicative inverse of a, mod m"
+  [a m]
+  (loop [t 0 next-t 1 r m next-r a]
+    (if (zero? next-r)
+      (if (neg? t) (+ t m) t)
+      (let [q (quot r next-r)]
+        (recur next-t (- t (* q next-t)) next-r (- r (* q next-r)))))))
+
+(defn mod-quot
+  "Computes a / b mod m"
+  [a b m]
+  (mod (*' a (mod-inverse b m)) m))
+
