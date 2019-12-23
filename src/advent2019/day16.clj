@@ -8,85 +8,68 @@
 
 (defn str->nums
   [s]
-  (map (comp read-string str) s))
+  (mapv (comp read-string str) s))
 
 (def day16-input
   (str->nums (first (u/puzzle-input "day16-input.txt"))))
 
-(def pattern [0 1 0 -1])
+(defn selector-lookup
+  [size idx]
+  (let [adds (for [x (range idx size (* (inc idx) 4))] [x (min size (+ x idx 1))])
+        subs (for [x (range (dec (* 3 (inc idx))) size (* (inc idx) 4))] [x (min size (+ x idx 1))])]
+    {:add-indices adds
+     :sub-indices subs}))
+
+; (defn selector-lookups
+;   [size]
+;   (map (partial selector-lookup size) (range size)))
+
+(defn selector
+  [size idx coll]
+  (let [{:keys [add-indices sub-indices]} (selector-lookup size idx)]
+    {:adds (vec (mapcat #(apply subvec coll %) add-indices))
+     :subs (vec (mapcat #(apply subvec coll %) sub-indices))}))
+
+(defn do-calc
+  [{:keys [adds subs]}]
+  (mod (Math/abs (- (reduce + adds)
+                    (reduce + subs))) 10))
+
+; (defn lookup-and-compute
+;   [{:keys [add-indices sub-indices]} num]
+;   (let [adds (vec (mapcat #(apply subvec num %) add-indices))
+;         subs (vec (mapcat #(apply subvec num %) sub-indices))]
+;     (mod (Math/abs (- (reduce + adds)
+;                       (reduce + subs))) 10)))
 
 (defn digit-calc
-  [pattern num]
-  (mod (Math/abs (reduce + (map * num pattern))) 10))
-
-(defn patterns
-  [size]
-  (for [x (range size)]
-    (take size (rest (cycle (mapcat (partial repeat (inc x)) pattern))))))
-
-(defn pattern-fn
-  [pattern]
-  (fn [num]
-    (digit-calc pattern num)))
-
-(defn pattern-fns
-  [size]
-  (let [patterns (for [x (range size)]
-                   (rest (cycle (mapcat (partial repeat (inc x)) pattern))))]
-    (map pattern-fn patterns)))
-
-(def patterns-memo (memoize patterns))
+  [size num]
+  (let [selections (pmap #(selector size % num) (range size))]
+    (mapv do-calc selections)))
 
 (defn phase
-  [nums]
-  (let [patterns (patterns-memo (count nums))]
-    (pmap #(digit-calc % nums) patterns)))
-
-(defn phase2
-  [patterns nums]
-  (pmap #(digit-calc % nums) patterns))
-
-(defn phase3
-  [pattern-fns nums]
-  (pmap #(% nums) pattern-fns))
-
-(defn run-phases3
-  [nums phases]
-  (let [size (count nums)
-        fns (pattern-fns size)
-        doit (partial phase3 fns)]
-    (nth (iterate doit nums) phases)))
-
-(defn mmul
-  [m1 m2]
-  (map (fn [row]
-         (map (fn [col]
-                (reduce + (map * row col))) m2)) m1))
+  [num]
+  (let [size (count num)]
+    (digit-calc size num)))
 
 (defn run-phases
   [nums phases]
   (let [size (count nums)
-        patterns (patterns size)
-        phase-fn (partial phase2 patterns)]
-    (loop [signal nums cnt 0]
-      (if (= cnt phases)
-        signal
-        (recur (phase-fn signal) (inc cnt))))))
-
+        stepper (partial digit-calc size)]
+    (first (drop phases (iterate stepper nums)))))
 
 (defn day16-part1-soln
   []
-  (nums->str (take 8 (nth (iterate phase day16-input) 100))))
+  (nums->str (take 8 (run-phases day16-input 100))))
 
 
-
-(defn real-signal
-  [nums phases]
-  (let [size (count nums)
-        signal (take (* size 10000) (cycle nums))
-        patterns (patterns (* size 10000))
-        phase-fn (partial phase2 patterns)
-        offset (read-string (nums->str (take 7 nums)))
-        answer (nth (iterate phase-fn signal) phases)]
-    (take 8 (drop offset answer))))
+; (defn real-signal
+;   [nums phases]
+;   (let [size (count nums)
+;         signal (take (* size 10000) (cycle nums))
+;         patterns (patterns (* size 10000))
+;         phase-fn (partial phase2 patterns)
+;         offset (read-string (nums->str (take 7 nums)))
+;         answer (nth (iterate phase-fn signal) phases)]
+;     (take 8 (drop offset answer))))
 
