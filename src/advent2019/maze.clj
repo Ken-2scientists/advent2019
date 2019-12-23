@@ -22,6 +22,12 @@
     :east [(inc x) y]
     :west [(dec x) y]))
 
+(defn better-neighbors
+  [maze [x y]]
+  (let [coords [[x (dec y)] [(dec x) y] [x (inc y)] [(inc x) y]]
+        vals (map maze coords)]
+    (zipmap coords vals)))
+
 (defn neighbors
   [maze [x y]]
   (let [north (get maze [x (dec y)])
@@ -110,6 +116,21 @@
   (let [simplified-maze (eliminate-dead-paths maze start)]
     (path-to-condition simplified-maze finish? [0 0])))
 
+(defn spread-to-adjacent
+  [maze [x y]]
+  (let [thens (better-neighbors maze [x y])
+        to-add (filter #(= :open (val %)) thens)]
+    (keys to-add)))
+
+(defn flood-fill
+  [maze start]
+  (loop [newmaze maze last-added [start] count 0]
+    (if (= 0 (u/count-if newmaze #(= :open (val %))))
+      count
+      (let [changes (mapcat (partial spread-to-adjacent newmaze) last-added)
+            updates (merge newmaze (zipmap changes (repeat :oxygen)))]
+        (recur updates changes (inc count))))))
+
 (defn val->str
   [val]
   (case val
@@ -124,4 +145,3 @@
     (doseq [[[x y] val] maze]
       (scr/put-string screen (+ x 40) (+ y 21) (val->str val)))
     (scr/redraw screen)))
-

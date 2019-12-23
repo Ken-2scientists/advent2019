@@ -58,3 +58,9 @@
   (let [maze (:maze (map-maze day15-input))
         path-to-end (maze/find-path maze [0 0])]
     (count path-to-end)))
+
+(defn day15-part2-soln
+  []
+  (let [maze (:maze (map-maze day15-input))
+        oxygen (ffirst (filter #(= :oxygen (val %)) maze))]
+    (maze/flood-fill maze oxygen)))
