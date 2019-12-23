@@ -51,3 +51,7 @@
   [a b m]
   (mod (*' a (mod-inverse b m)) m))
 
+(defn count-if
+  [coll pred]
+  (count (filter pred coll)))
+
