@@ -141,7 +141,7 @@
 
 (defn intcode-ex-async
   [intcode in out]
-  (loop [state {:intcode (into intcode (repeat 1000 0))
+  (loop [state {:intcode (into intcode (repeat 20000 0))
                 :pos 0
                 :base 0
                 :in in
