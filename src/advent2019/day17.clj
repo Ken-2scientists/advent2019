@@ -15,26 +15,35 @@
     :unknown))
 
 (defn scaffold-map
-  [intcode]
-  (let [output (intcode/read-output (intcode/intcode-ex intcode []))
-        lines (str/split (str/join (map char output)) #"\n")
+  [ascii]
+  (let [lines (str/split (str/join (map char ascii)) #"\n")
         row-count (count lines)
         symbols (map #(map char->obj %) lines)
         col-count (count (first symbols))]
-    (println row-count col-count)
-    (zipmap (for [y (range col-count)
-                  x (range row-count)]
+    (zipmap (for [y (range row-count)
+                  x (range col-count)]
               [x y])
             (flatten symbols))))
-
 
 (defn intersection?
   [space pos]
   (if (= :scaffold (space pos))
-    (every? #(= :scaffold) (vals (maze/better-neighbors space pos)))
+    (every? #(= :scaffold %) (vals (maze/better-neighbors space pos)))
     false))
 
 (defn intersections
   [space]
-  (let [candidates (filter #(intersection? space %) (keys space))]
+  (let [candidates (filter (partial intersection? space) (keys space))]
     candidates))
+
+(defn alignment-sum
+  [intersections]
+  (reduce + (map #(apply * %) intersections)))
+
+(defn day17-part1-soln
+  []
+  (->> (intcode/intcode-ex day17-input [])
+       intcode/read-output
+       scaffold-map
+       intersections
+       alignment-sum))
