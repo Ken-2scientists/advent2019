@@ -55,3 +55,7 @@
   [coll pred]
   (count (filter pred coll)))
 
+(defn invert-map
+  [m]
+  (zipmap (vals m) (keys m)))
+
