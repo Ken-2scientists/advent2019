@@ -160,9 +160,12 @@
   [{:keys [out]}]
   (s/stream->seq out 25))
 
+(defn cmds->ascii
+  [cmds]
+  (map (comp int char) (str (str/join "\n" cmds) "\n")))
+
 (defn send-ascii-cmd
   [in cmd]
-  (println "sending" cmd)
   (s/put-all! in (map (comp int char) (str cmd "\n"))))
 
 (defn read-ascii-output
@@ -174,7 +177,8 @@
   (let [in (s/stream)
         out (s/stream)
         program (future (intcode-ex-async intcode in out))]
-    (s/put-all! in (map (comp int char) (str (str/join "\n" starter-cmds) "\n")))
+    (when (> (count starter-cmds) 0)
+      (s/put-all! in (map (comp int char) (str (str/join "\n" starter-cmds) "\n"))))
     (while (not (realized? program))
       (println (read-ascii-output (s/stream->seq out 100)))
       (send-ascii-cmd in (read-line)))))
