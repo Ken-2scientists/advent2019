@@ -13,11 +13,14 @@
    "WALK"])
 
 (def spring-codes-part2
-  ["OR A T"
-   "AND B T"
-   "AND C T"
-   "NOT T J"
+  ["OR A J"
+   "AND B J"
+   "AND C J"
+   "NOT J J"
    "AND D J"
+   "OR E T"
+   "OR H T"
+   "AND T J"
    "RUN"])
 
 (defn interactive
@@ -30,4 +33,4 @@
 
 (defn day21-part2-soln
   []
-  (intcode/read-output (intcode/intcode-ex day21-input (intcode/cmds->ascii spring-codes-part2))))
+  (last (intcode/read-output (intcode/intcode-ex day21-input (intcode/cmds->ascii spring-codes-part2)))))
