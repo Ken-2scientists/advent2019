@@ -17,14 +17,24 @@
       queues
       (update queues idx conj val))))
 
-(defn dequeue
-  [ins queues [idx queue]]
-  (println "DEQUEUE: " idx queue)
-  (let [[address x y] (take 3 queue)
-        chan (nth ins address)]
+(defn send-packet
+  [ins address [x y]]
+  (let [chan (nth ins address)]
     (s/put! chan x)
-    (s/put! chan y)
-    (update queues idx (comp vec (partial drop 3)))))
+    (s/put! chan y)))
+
+(defn dequeue
+  [ins {:keys [queues nat] :as state} [idx queue]]
+  (let [address (first queue)
+        packet (take 2 (rest queue))
+        newnat (if (= address 255)
+                 packet
+                 (do
+                   (send-packet ins address packet)
+                   nat))]
+    (assoc state
+           :nat newnat
+           :queues (update queues idx (comp vec (partial drop 3))))))
 
 (defn send-no-data
   [ins]
@@ -39,15 +49,24 @@
   [readies]
   (some #(= 255 %) (map first (vals readies))))
 
+(defn idle-network?
+  [outs queues]
+  (let [queued (reduce + (map count (vals queues)))
+        outs (reduce + (map (comp :pending-puts s/description) outs))]
+    (= 0 (+ queued outs))))
+
 (defn switch-step
-  [ins outs queues]
+  [ins outs {:keys [queues nat] :as state}]
   (let [new-queues (reduce enqueue queues (map-indexed vector outs))
-        readies (sort-by first (filter ready-to-send? new-queues))]
-    (send-no-data ins)
-    (if (stop? readies)
-      (do (println "Really?")
-          [new-queues readies])
-      [(reduce (partial dequeue ins) new-queues readies) nil])))
+        new-state (assoc state :queues new-queues)
+        readies (filter ready-to-send? new-queues)]
+    (when (idle-network? outs queues)
+      (do
+        (println "Packet from NAT" nat)
+        (send-packet ins 0 nat)))
+    (if false
+      (assoc new-state :status readies)
+      (reduce (partial dequeue ins) new-state readies))))
 
 (defn network
   [intcode]
@@ -58,8 +77,7 @@
         _ (doall (map s/put! ins (range 50)))
         _ (send-no-data ins)
         _ (doall (map (partial computer intcode) ins outs))]
-    (loop [q queues status nil]
-      (if (some? status)
-        status
-        (let [[newqueues stat] (stepper q)]
-          (recur newqueues stat))))))
+    (loop [state {:queues queues :nat [] :status nil}]
+      (if (some? (state :status))
+        (state :status)
+        (recur (stepper state))))))
