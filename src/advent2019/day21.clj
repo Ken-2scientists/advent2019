@@ -7,7 +7,7 @@
 
 (def day21-input (u/puzzle-input-vec "day21-input.txt"))
 
-(def spring-codes
+(def spring-codes-part1
   ["OR A T"
    "AND B T"
    "AND C T"
@@ -15,6 +15,22 @@
    "AND D J"
    "WALK"])
 
+(def spring-codes-part2
+  ["OR A T"
+   "AND B T"
+   "AND C T"
+   "NOT T J"
+   "AND D J"
+   "RUN"])
+
+(defn interactive
+  []
+  (intcode/interactive-asciicode day21-input []))
+
 (defn day21-part1-soln
   []
-  (last (intcode/read-output (intcode/intcode-ex day21-input (intcode/cmds->ascii spring-codes)))))
+  (last (intcode/read-output (intcode/intcode-ex day21-input (intcode/cmds->ascii spring-codes-part1)))))
+
+(defn day21-part2-soln
+  []
+  (intcode/read-output (intcode/intcode-ex day21-input (intcode/cmds->ascii spring-codes-part2))))
