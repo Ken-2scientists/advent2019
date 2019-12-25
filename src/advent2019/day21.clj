@@ -1,8 +1,5 @@
 (ns advent2019.day21
-  (:require [clojure.string :as str]
-            [advent2019.ascii :as ascii]
-            [advent2019.intcode :as intcode]
-            [advent2019.maze :as maze]
+  (:require [advent2019.intcode :as intcode]
             [advent2019.utils :as u]))
 
 (def day21-input (u/puzzle-input-vec "day21-input.txt"))

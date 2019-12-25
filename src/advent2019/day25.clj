@@ -1,7 +1,5 @@
 (ns advent2019.day25
-  (:require [clojure.string :as str]
-            [clojure.math.combinatorics :as combo]
-            [manifold.stream :as s]
+  (:require [clojure.math.combinatorics :as combo]
             [advent2019.intcode :as intcode]
             [advent2019.utils :as u]))
 
