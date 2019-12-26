@@ -62,9 +62,12 @@
       (+ pos (+ size arg))
       (+ pos arg))))
 
+(def mod-inv-memo (memoize u/mod-inverse))
+
 (defn increment-single
   [size arg pos]
-  (u/mod-quot pos arg size))
+  (let [mod-inv (mod-inv-memo arg size)]
+    (mod (*' pos mod-inv) size)))
 
 (defn do-step-single
   [size pos [cmd arg]]
@@ -77,11 +80,19 @@
   [size steps pos]
   (reduce (partial do-step-single size) pos (reverse steps)))
 
+(defn first-recurrence-count
+  [val coll]
+  (loop [s (drop 1 coll) count 0]
+    (if (= val (first s))
+      (inc count)
+      (recur (drop 1 s) (inc count)))))
+
 
 (defn card-after-multiple-shuffles
   [size steps times position]
   (let [one-shuffle-lookup (partial shuffle-deck-single size steps)
-        recurrence-period (inc (u/index-of position (drop 1 (iterate one-shuffle-lookup position))))
+        _ (println "Searching for recurrence period")
+        recurrence-period (first-recurrence-count position (iterate one-shuffle-lookup position))
         _ (println "Reccurence period identified:" recurrence-period)
         remaining (mod times recurrence-period)
         _ (println "Will simulate " remaining " steps")]
