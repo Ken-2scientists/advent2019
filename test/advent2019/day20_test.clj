@@ -64,22 +64,22 @@
 
 (deftest label-locations-test
   (testing "Can find the maze coordinates of all of the labels"
-    (is (= {[7 0] "AA", 
-            [0 6] "BC", [0 11] "DE", [0 13] "FG", 
-            [7 4] "BC", 
-            [4 8] "DE", 
-            [9 10] "FG", 
-            [11 14] "ZZ"}
+    (is (= {[7 0] ["AA" :outer], 
+            [0 6] ["BC" :outer], [0 11] ["DE" :outer], [0 13] ["FG" :outer], 
+            [7 4] ["BC" :inner], 
+            [4 8] ["DE" :inner], 
+            [9 10] ["FG" :inner], 
+            [11 14] ["ZZ" :outer]}
            (t/label-locations d20-s1)))
-    (is (= {[17 0] "AA"
-            [0 13] "DI", [0 17] "JO", [0 21] "YN",
-            [9 32] "BU", [13 32] "JP", [17 32] "CP",
-            [30 9] "VT", [30 15] "AS", [30 19] "LF", [30 21] "QG",
-            [15 6] "AS", [19 6] "CP", 
-            [6 19] "DI"
-            [11 26] "JO", [13 26] "LF", [19 26] "JP",
-            [24 11] "YN", [24 15] "QG", [24 19] "BU", [24 21] "VT",  
-            [0 15] "ZZ"}
+    (is (= {[17 0] ["AA" :outer]
+            [0 13] ["DI" :outer], [0 17] ["JO" :outer], [0 21] ["YN" :outer],
+            [9 32] ["BU" :outer], [13 32] ["JP" :outer], [17 32] ["CP" :outer],
+            [30 9] ["VT" :outer], [30 15] ["AS" :outer], [30 19] ["LF" :outer], [30 21] ["QG" :outer],
+            [15 6] ["AS" :inner], [19 6] ["CP" :inner], 
+            [6 19] ["DI" :inner]
+            [11 26] ["JO" :inner], [13 26] ["LF" :inner], [19 26] ["JP" :inner],
+            [24 11] ["YN" :inner], [24 15] ["QG" :inner], [24 19] ["BU" :inner], [24 21] ["VT" :inner],  
+            [0 15] ["ZZ" :outer]}
            (t/label-locations d20-s2)))))
 
 (deftest boundary-test

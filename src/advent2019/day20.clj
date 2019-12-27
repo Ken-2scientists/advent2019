@@ -44,17 +44,18 @@
 
 (defn fix-coord
   [{:keys [width height thickness]} inout side [pos label]]
-  (case inout
-    :outer (case side
-             :top [[pos 0] label]
-             :bot [[pos (dec height)] label]
-             :lft [[0 pos] label]
-             :rgt [[(dec width) pos] label])
-    :inner (case side
-             :top [[pos (dec thickness)] label]
-             :bot [[pos (- height thickness)] label]
-             :lft [[(dec thickness) pos] label]
-             :rgt [[(- width thickness) pos] label])))
+  (let [val [label inout]]
+    (case inout
+      :outer (case side
+               :top [[pos 0] val]
+               :bot [[pos (dec height)] val]
+               :lft [[0 pos] val]
+               :rgt [[(dec width) pos] val])
+      :inner (case side
+               :top [[pos (dec thickness)] val]
+               :bot [[pos (- height thickness)] val]
+               :lft [[(dec thickness) pos] val]
+               :rgt [[(- width thickness) pos] val]))))
 
 (defn label-locations
   [maze]
@@ -81,12 +82,18 @@
    \# :wall
    \  :nothing})
 
+(defn labels->portals
+  [labels]
+  (let [by-label (group-by (comp first second) labels)]
+    (u/fmap #(into {} (map (fn [[k v]] [(second v) k]) %)) by-label)))
+
 (defn load-maze
   [maze]
   (let [labels (label-locations maze)
-        portals (u/fmap #(map first %) (group-by second labels))]
-    {:labels (label-locations maze)
-     :ends {"AA" (first (portals "AA")) "ZZ" (first (portals "ZZ"))}
+        portals (labels->portals labels)]
+    {:labels labels
+     :ends {"AA" (get-in portals ["AA" :outer])
+            "ZZ" (get-in portals ["ZZ" :outer])}
      :portals (dissoc portals "AA" "ZZ")
      :dims (maze-dims maze)
      :maze (into {} (filter #(not= :nothing (val %)) (ascii/ascii->map maze-map (trim-maze maze))))}))
@@ -113,10 +120,16 @@
       (and (= thickness y) (> x (dec thickness)) (< x (- width thickness)))
       (and (= (dec (- height thickness)) y) (> x (dec thickness)) (< x (- width thickness)))))
 
+(defn switch-side
+  [side]
+  (case side
+    :inner :outer
+    :outer :inner))
+
 (defn portal-replace
   [{:keys [labels portals]} pos]
-  (let [portal-name (labels pos)]
-    (first (filter #(not= pos %) (portals portal-name)))))
+  (let [[name side] (labels pos)]
+    (get-in portals [name (switch-side side)])))
 
 (defn neighbor-fixer
   [state pos n]
