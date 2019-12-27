@@ -67,7 +67,7 @@
 
 (defn find-path
   [maze start finish]
-  (maze/dijkstra maze all-open open-neighbors distance start finish))
+  (maze/dijkstra maze (count (all-open maze)) open-neighbors distance start finish))
 
 (defn day15-part1-soln
   []

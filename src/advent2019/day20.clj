@@ -166,7 +166,8 @@
 
 (defn find-shortest-path
   [state start finish]
-  (maze/dijkstra state (comp all-open :maze) open-neighbors distance start finish))
+  (let [max-search (count (all-open (state :maze)))]
+    (maze/dijkstra state max-search open-neighbors distance start finish)))
 
 (defn solve-maze
   [maze]

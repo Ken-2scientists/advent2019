@@ -152,6 +152,10 @@
   [s m]
   (filter (fn [[k _]] (s k)) m))
 
+(defn entries-not-in-set
+  [s m]
+  (filter (fn [[k _]] ((complement s) k)) m))
+
 (defn dijkstra-update
   [distance-fn node {:keys [dist prev] :as state} neighbor]
   (let [alt (+ (dist node) (distance-fn node neighbor))]
@@ -167,15 +171,14 @@
       (recur (prev-steps node) (conj chain node)))))
 
 (defn dijkstra
-  [graph all-vertices edges-fn distance-fn start finish]
-  (let [vertices (set (all-vertices graph))
-        init-state {:dist (priority-map start 0) :prev {}}]
-    (loop [cands vertices node start state init-state]
-      (if (or (zero? (count cands)) (= node finish))
+  [graph max-search edges-fn distance-fn start finish]
+  (let [init-state {:dist (priority-map start 0) :prev {}}]
+    (loop [visited #{} node start state init-state]
+      (if (or (= max-search (count visited)) (= node finish))
         (drop 1 (reverse (dijkstra-retrace (state :prev) finish)))
-        (let [neighbors (filter cands (edges-fn graph node))
+        (let [neighbors (filter (complement visited) (edges-fn graph node))
               new-state (reduce (partial dijkstra-update distance-fn node) state neighbors)]
-          (recur (disj cands node) (ffirst (entries-in-set cands (state :dist))) new-state))))))
+          (recur (conj visited node) (ffirst (entries-not-in-set visited (state :dist))) new-state))))))
 
 (defn find-target
   [maze target]
