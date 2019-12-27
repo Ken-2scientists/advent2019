@@ -160,7 +160,7 @@
   (let [init-state {:dist (priority-map start 0) :prev {}}]
     (loop [visited #{} node start state init-state]
       (if (or (= max-search (count visited)) (= node finish))
-        (drop 1 (reverse (dijkstra-retrace (state :prev) finish)))
+        (reverse (dijkstra-retrace (state :prev) finish))
         (let [neighbors (filter (complement visited) (edges-fn graph node))
               new-state (reduce (partial dijkstra-update distance-fn node) state neighbors)]
           (recur (conj visited node) (ffirst (entries-not-in-set visited (state :dist))) new-state))))))
@@ -176,12 +176,26 @@
 (defn only-available-path
   "Find the only available path until a choice is presented"
   [graph edges-fn start]
-  (loop [visited #{} node start]
-    (let [next-neighbors (filter (complement visited) (edges-fn graph node))
-          options(count next-neighbors)]
-      (if (or (> options 1) (= options 0))  
-        (seq visited)
-        (recur (conj visited node) (first next-neighbors))))))
+  (loop [visited [start] neighbors (edges-fn graph start)]
+    (if (or (> (count neighbors) 1) (= (count neighbors) 0))
+      visited
+      (recur (conj visited (first neighbors))
+             (filter (complement (set visited)) (edges-fn graph (first neighbors)))))))
+
+(defn only-available-path-from-junction
+  "Find the only available path starting at a junction from one neighbor"
+  [graph edges-fn junction start]
+  (loop [visited [junction start] neighbors (filter (complement #{junction}) (edges-fn graph start))]
+    (if (or (> (count neighbors) 1) (= (count neighbors) 0))
+      visited
+      (recur (conj visited (first neighbors))
+             (filter (complement (set visited)) (edges-fn graph (first neighbors)))))))
+
+(defn paths-from-junction
+  "Find the paths outward from a junction until the next junction or an end is reached"
+  [graph edges-fn junction]
+  (let [neighbors (edges-fn graph junction)]
+    (mapv (partial only-available-path-from-junction graph edges-fn junction) neighbors)))
 
 (defn relabel-dead-paths
   [graph update-fn vertices-fn edges-fn exclude-set label]
@@ -191,7 +205,7 @@
       (if (= 0 (count dead-ends))
         newgraph
         (recur (update-fn newgraph
-                          (zipmap (mapcat (partial only-available-path newgraph edges-fn) dead-ends)
+                          (zipmap (mapcat #(butlast (only-available-path newgraph edges-fn %)) dead-ends)
                                   (repeat label))))))))
 
 (defn printable-maze

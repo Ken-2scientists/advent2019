@@ -190,7 +190,7 @@
 
 (defn day20-part1-soln
   []
-  (count (solve-maze day20-input)))
+  (dec (count (solve-maze day20-input))))
 
 (defn top-layer
   [{:keys [portals maze] :as state}]
@@ -251,3 +251,39 @@
         end (conj (get-in state [:ends "ZZ"]) 0)
         rmaze (recursive-maze state)]
     (find-shortest-path-3d rmaze start end)))
+
+(defn open-neighbors2
+  [maze pos]
+  (all-open (maze/better-neighbors maze pos)))
+
+(defn summarize-path
+  [path]
+  (map (fn [x] [(first x) {(last x) (dec (count x))}]) path))
+
+(defn simple-border-adjacents
+  [state]
+  (let [maze (state :maze)]
+    (->>  (filter (partial boundary? state) (all-open maze))
+          (map #(maze/only-available-path maze open-neighbors2 %))
+          (filter #(> (count %) 1))
+          summarize-path
+          (apply concat)
+          (apply hash-map))))
+
+(defn simple-intersection-adjacents
+  [state]
+  (let [maze (state :maze)]
+    (->> (filter #(= 3 (count (open-neighbors2 maze %))) (all-open maze))
+         (mapcat #(maze/paths-from-junction maze open-neighbors2 %))
+         summarize-path
+         (group-by first)
+         (u/fmap #(apply merge (map second %))))))
+
+(defn top-level-graph
+  [state]
+  (simple-border-adjacents state))
+
+(defn lower-level-graph
+  [state]
+  (merge (simple-border-adjacents state) (simple-intersection-adjacents state)))
+

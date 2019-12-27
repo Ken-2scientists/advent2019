@@ -77,7 +77,7 @@
         finish (maze/find-target maze :oxygen)
         simplified-maze (maze/relabel-dead-paths maze merge all-open open-neighbors #{start finish} :wall)
         path-to-end (find-path simplified-maze start finish)]
-    (count path-to-end)))
+    (dec (count path-to-end))))
 
 (defn day15-part2-soln
   []

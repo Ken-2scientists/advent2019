@@ -125,8 +125,8 @@
 
 (deftest shortest-path-test
   (testing "Can find the shortest path when using portals"
-    (is (= 23 (count (t/solve-maze d20-s1))))
-    (is (= 58 (count (t/solve-maze d20-s2))))))
+    (is (= 23 (dec (count (t/solve-maze d20-s1)))))
+    (is (= 58 (dec (count (t/solve-maze d20-s2)))))))
 
 (deftest day20-part1-soln-test
   (testing "Can reproduce the solution for part1"
@@ -174,5 +174,5 @@
 
 (deftest shortest-path-3d-test
   (testing "Can find the shortest path through the recursive maze"
-    (is (= 26 (count (t/solve-recursive-maze d20-s1))))
-    (is (= 396 (count (t/solve-recursive-maze d20-s3))))))
+    (is (= 26 (dec (count (t/solve-recursive-maze d20-s1)))))
+    (is (= 396 (dec (count (t/solve-recursive-maze d20-s3)))))))
