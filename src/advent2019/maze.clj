@@ -177,8 +177,9 @@
   "Find the only available path until a choice is presented"
   [graph edges-fn start]
   (loop [visited #{} node start]
-    (let [next-neighbors (filter (complement visited) (edges-fn graph node))]
-      (if (> (count next-neighbors) 1)
+    (let [next-neighbors (filter (complement visited) (edges-fn graph node))
+          options(count next-neighbors)]
+      (if (or (> options 1) (= options 0))  
         (seq visited)
         (recur (conj visited node) (first next-neighbors))))))
 

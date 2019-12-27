@@ -170,6 +170,11 @@
         end (get-in state [:ends "ZZ"])]
     (maze/relabel-dead-paths state #(update %1 :maze merge %2) (comp all-open :maze) open-neighbors #{start end} :wall)))
 
+(defn simpler-maze-portals
+  [{:keys [ends portals] :as state}]
+  (let [excludes (into #{(ends "AA") (ends "ZZ")} (map :inner (vals portals)))]
+    (maze/relabel-dead-paths state #(update %1 :maze merge %2) (comp all-open :maze) open-neighbors excludes :wall)))
+
 (defn find-shortest-path
   [state start finish]
   (let [max-search (count (all-open (state :maze)))]
@@ -186,3 +191,63 @@
 (defn day20-part1-soln
   []
   (count (solve-maze day20-input)))
+
+(defn top-layer
+  [{:keys [portals maze] :as state}]
+  (let [outer-locs (map :outer (vals portals))]
+    (assoc state :maze (merge maze (zipmap outer-locs (repeat :wall))))))
+
+(defn lower-layer
+  [{:keys [ends maze] :as state}]
+  (let [wall-locs [(ends "AA") (ends "ZZ")]]
+    (assoc state :maze (merge maze (zipmap wall-locs (repeat :wall))))))
+
+(defn portal-replace-3d
+  [{:keys [labels portals]} [x y z]]
+  (let [[name side] (labels [x y])
+        [newx newy] (get-in portals [name (switch-side side)])]
+    [newx newy (if (= side :inner) (inc z) (dec z))]))
+
+(defn neighbor-fixer-3d
+  [state pos [x y z]]
+  (if (outside? state [x y])
+    (portal-replace-3d state pos)
+    [x y z]))
+
+(defn neighbor-coords-3d
+  [state [x y z]]
+  (let [neighbors (map conj (maze/adj-coords [x y]) (repeat z))]
+    (if (boundary? state [x y z])
+      (filter some? (mapv (partial neighbor-fixer-3d state [x y z]) neighbors))
+      neighbors)))
+
+(defn neighbors-3d
+  [state pos]
+  (let [coords (neighbor-coords-3d state pos)
+        vals (map (state :maze) coords)]
+    (zipmap coords vals)))
+
+(defn open-neighbors-3d
+  [state pos]
+  (all-open (neighbors-3d state pos)))
+
+(defn recursive-maze
+  [state]
+  (let [top-maze-template ((simpler-maze-portals (top-layer state)) :maze)
+        lower-maze-template ((simpler-maze (lower-layer state)) :maze)]
+    (assoc state :maze (fn [[x y z]]
+                         (if (= z 0)
+                           (top-maze-template [x y])
+                           (lower-maze-template [x y]))))))
+
+(defn find-shortest-path-3d
+  [state start finish]
+  (maze/dijkstra state 1000000000 open-neighbors-3d distance start finish))
+
+(defn solve-recursive-maze
+  [maze]
+  (let [state (load-maze maze)
+        start (conj (get-in state [:ends "AA"]) 0)
+        end (conj (get-in state [:ends "ZZ"]) 0)
+        rmaze (recursive-maze state)]
+    (find-shortest-path-3d rmaze start end)))
