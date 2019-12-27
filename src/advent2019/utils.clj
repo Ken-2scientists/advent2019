@@ -27,6 +27,11 @@
   [f m]
   (zipmap (map f (keys m)) (vals m)))
 
+(defn manhattan
+  "Computes the Manhattan distance between two points"
+  [[x1 y1] [x2 y2]]
+  (+ (Math/abs (- y2 y1)) (Math/abs (- x2 x1))))
+
 (defn pprint-image
   [image width]
   (let [legible-pixels (replace {0 " " 1 "*"} image)]

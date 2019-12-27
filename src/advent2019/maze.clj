@@ -1,5 +1,6 @@
 (ns advent2019.maze
   (:require [lanterna.screen :as scr]
+            [clojure.data.priority-map :refer [priority-map]]
             [advent2019.utils :as u]))
 
 (defn relative-direction
@@ -22,19 +23,20 @@
     :east [(inc x) y]
     :west [(dec x) y]))
 
+(defn adj-coords
+  "Coordinates of four adjacent points, always in the order n w s e"
+  [[x y]]
+  [[x (dec y)] [(dec x) y] [x (inc y)] [(inc x) y]])
+
 (defn better-neighbors
-  [maze [x y]]
-  (let [coords [[x (dec y)] [(dec x) y] [x (inc y)] [(inc x) y]]
+  [maze pos]
+  (let [coords (adj-coords pos)
         vals (map maze coords)]
     (zipmap coords vals)))
 
 (defn neighbors
-  [maze [x y]]
-  (let [north (get maze [x (dec y)])
-        west (get maze [(dec x) y])
-        south (get maze [x (inc y)])
-        east (get maze [(inc x) y])]
-    [north west south east]))
+  [maze pos]
+  (mapv maze (adj-coords pos)))
 
 (defn relative-neighbors
   [maze [x y] direction]
@@ -145,3 +147,54 @@
     (doseq [[[x y] val] maze]
       (scr/put-string screen (+ x 40) (+ y 21) (val->str val)))
     (scr/redraw screen)))
+
+(defn entries-in-set
+  [s m]
+  (filter (fn [[k _]] (s k)) m))
+
+(defn dijkstra-update
+  [distance-fn node {:keys [dist prev] :as state} neighbor]
+  (let [alt (+ (dist node) (distance-fn node neighbor))]
+    (if (or (nil? (dist neighbor)) (< alt (dist neighbor)))
+      {:dist (assoc dist neighbor alt) :prev (assoc prev neighbor node)}
+      state)))
+
+(defn dijkstra-retrace
+  [prev-steps finish]
+  (loop [node finish chain []]
+    (if (nil? node)
+      chain
+      (recur (prev-steps node) (conj chain node)))))
+
+(defn dijkstra
+  [graph all-vertices edges-fn distance-fn start finish]
+  (let [vertices (set (all-vertices graph))
+        init-state {:dist (priority-map start 0) :prev {}}]
+    (loop [cands vertices node start state init-state]
+      (if (or (zero? (count cands)) (= node finish))
+        (drop 1 (reverse (dijkstra-retrace (state :prev) finish)))
+        (let [neighbors (filter cands (edges-fn graph node))
+              new-state (reduce (partial dijkstra-update distance-fn node) state neighbors)]
+          (recur (disj cands node) (ffirst (entries-in-set cands (state :dist))) new-state))))))
+
+(defn all-open
+  [maze]
+  (map first (filter #(not= :wall (val %)) maze)))
+
+(defn open-neighbors
+  [maze pos]
+  (all-open (better-neighbors maze pos)))
+
+(defn distance
+  [p1 p2]
+  ;; Could compute the manhattan distance, but it's always going to be one for the maze
+  ;; (u/manhattan p1 p2)
+  1)
+
+(defn find-target
+  [maze target]
+  (ffirst (filter #(= target (val %)) maze)))
+
+(defn find-path-d
+  [maze start finish]
+  (dijkstra maze all-open open-neighbors distance start finish))

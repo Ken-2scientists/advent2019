@@ -69,13 +69,9 @@
   [angle]
   (mod (- 450 angle) 360))
 
-(defn distance
-  [[x1 y1] [x2 y2]]
-  (+ (Math/abs (- y2 y1)) (Math/abs (- x2 x1))))
-
 (defn sort-by-distance
   [x others]
-  (sort-by (partial distance x) others))
+  (sort-by (partial u/manhattan x) others))
 
 (defn pad-coll
   [size coll]

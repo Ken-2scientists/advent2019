@@ -1,7 +1,10 @@
 (ns advent2019.day20
-  (:require [advent2019.utils :as u]))
+  (:require [clojure.string :as str]
+            [advent2019.ascii :as ascii]
+            [advent2019.maze :as maze]
+            [advent2019.utils :as u]))
 
-(def day20-input (u/puzzle-input-vec "day20-input.txt"))
+(def day20-input (vec (u/puzzle-input "day20-input.txt")))
 
 (defn maze-dims
   [maze]
@@ -46,7 +49,7 @@
              :top [[pos 0] label]
              :bot [[pos (dec height)] label]
              :lft [[0 pos] label]
-             :rgt [[(dec width)] label])
+             :rgt [[(dec width) pos] label])
     :inner (case side
              :top [[pos (dec thickness)] label]
              :bot [[pos (- height thickness)] label]
@@ -65,3 +68,100 @@
         inner-lft (map (partial fix-coord dims :inner :lft) (vertical-labels maze (+ 2 thickness)))
         inner-rgt (map (partial fix-coord dims :inner :rgt) (vertical-labels maze (+ thickness hole-width)))]
     (apply hash-map (apply concat (concat outer-top outer-bot outer-lft outer-rgt inner-top inner-bot inner-lft inner-rgt)))))
+
+(defn trim-maze
+  [maze]
+  (let [width (count (first maze))
+        trim (fn [s] (subs s 2 (- width 2)))
+        clean (fn [s] (str/replace s #"\w" " "))]
+    (map (comp clean trim) (butlast (butlast (drop 2 maze))))))
+
+(def maze-map
+  {\. :open
+   \# :wall
+   \  :nothing})
+
+(defn load-maze
+  [maze]
+  (let [labels (label-locations maze)
+        portals (u/fmap #(map first %) (group-by second labels))]
+    {:labels (label-locations maze)
+     :ends {"AA" (first (portals "AA")) "ZZ" (first (portals "ZZ"))}
+     :portals (dissoc portals "AA" "ZZ")
+     :dims (maze-dims maze)
+     :maze (into {} (filter #(not= :nothing (val %)) (ascii/ascii->map maze-map (trim-maze maze))))}))
+
+(defn boundary?
+  [{{:keys [width height thickness]} :dims} [x y]]
+  (or (= 0 x)
+      (= (dec width) x)
+      (= 0 y)
+      (= (dec height) y)
+      (and (= (dec thickness) x) (> y (dec thickness)) (< y (- height thickness)))
+      (and (= (- width thickness) x) (> y (dec thickness)) (< y (- height thickness)))
+      (and (= (dec thickness) y) (> x (dec thickness)) (< x (- width thickness)))
+      (and (= (- height thickness) y) (> x (dec thickness)) (< x (- width thickness)))))
+
+(defn outside?
+  [{{:keys [width height thickness]} :dims} [x y]]
+  (or (= x -1)
+      (= x width)
+      (= y -1)
+      (= y height)
+      (and (= thickness x) (> y (dec thickness)) (< y (- height thickness)))
+      (and (= (dec (- width thickness)) x) (> y (dec thickness)) (< y (- height thickness)))
+      (and (= thickness y) (> x (dec thickness)) (< x (- width thickness)))
+      (and (= (dec (- height thickness)) y) (> x (dec thickness)) (< x (- width thickness)))))
+
+(defn portal-replace
+  [{:keys [labels portals]} pos]
+  (let [portal-name (labels pos)]
+    (first (filter #(not= pos %) (portals portal-name)))))
+
+(defn neighbor-fixer
+  [state pos n]
+  (if (outside? state n)
+    (portal-replace state pos)
+    n))
+
+(defn neighbor-coords
+  [state pos]
+  (let [neighbors (maze/adj-coords pos)]
+    (if (boundary? state pos)
+      (filter some? (mapv (partial neighbor-fixer state pos) neighbors))
+      neighbors)))
+
+(defn neighbors
+  [state pos]
+  (let [coords (neighbor-coords state pos)
+        vals (map (state :maze) coords)]
+    (zipmap coords vals)))
+
+(defn all-open
+  [maze]
+  (map first (filter #(= :open (val %)) maze)))
+
+(defn open-neighbors
+  [state pos]
+  (all-open (neighbors state pos)))
+
+(defn distance
+  [p1 p2]
+  ;; Could compute the manhattan distance, but it's always going to be one for the maze
+  ;; (u/manhattan p1 p2)
+  1)
+
+(defn find-shortest-path
+  [state start finish]
+  (maze/dijkstra state (comp all-open :maze) open-neighbors distance start finish))
+
+(defn solve-maze
+  [maze]
+  (let [state (load-maze maze)
+        start (get-in state [:ends "AA"])
+        end (get-in state [:ends "ZZ"])]
+    (find-shortest-path state start end)))
+
+(defn day20-part1-soln
+  []
+  (count (solve-maze day20-input)))
