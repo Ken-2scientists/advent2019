@@ -159,7 +159,7 @@
   (all-open (neighbors state pos)))
 
 (defn distance
-  [p1 p2]
+  [_ _]
   ;; Could compute the manhattan distance, but it's always going to be one for the maze
   ;; (u/manhattan p1 p2)
   1)

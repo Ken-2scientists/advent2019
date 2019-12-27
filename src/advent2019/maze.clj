@@ -177,24 +177,6 @@
               new-state (reduce (partial dijkstra-update distance-fn node) state neighbors)]
           (recur (disj cands node) (ffirst (entries-in-set cands (state :dist))) new-state))))))
 
-(defn all-open
-  [maze]
-  (map first (filter #(not= :wall (val %)) maze)))
-
-(defn open-neighbors
-  [maze pos]
-  (all-open (better-neighbors maze pos)))
-
-(defn distance
-  [p1 p2]
-  ;; Could compute the manhattan distance, but it's always going to be one for the maze
-  ;; (u/manhattan p1 p2)
-  1)
-
 (defn find-target
   [maze target]
   (ffirst (filter #(= target (val %)) maze)))
-
-(defn find-path-d
-  [maze start finish]
-  (dijkstra maze all-open open-neighbors distance start finish))

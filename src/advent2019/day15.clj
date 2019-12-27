@@ -53,14 +53,31 @@
         state
         (recur (stepper state))))))
 
+(defn all-open
+  [maze]
+  (map first (filter #(not= :wall (val %)) maze)))
+
+(defn open-neighbors
+  [maze pos]
+  (all-open (maze/better-neighbors maze pos)))
+
+(defn distance
+  [_ _]
+  1)
+
+(defn find-path
+  [maze start finish]
+  (maze/dijkstra maze all-open open-neighbors distance start finish))
+
 (defn day15-part1-soln
   []
-  (let [maze (:maze (map-maze day15-input))
-        path-to-end (maze/find-path maze [0 0])]
+  (let [maze ((map-maze day15-input) :maze)
+        finish (maze/find-target maze :oxygen)
+        path-to-end (find-path maze [0 0] finish)]
     (count path-to-end)))
 
 (defn day15-part2-soln
   []
   (let [maze (:maze (map-maze day15-input))
-        oxygen (ffirst (filter #(= :oxygen (val %)) maze))]
+        oxygen (maze/find-target maze :oxygen)]
     (maze/flood-fill maze oxygen)))
