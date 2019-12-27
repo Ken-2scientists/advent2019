@@ -164,6 +164,12 @@
   ;; (u/manhattan p1 p2)
   1)
 
+(defn simpler-maze
+  [state]
+  (let [start (get-in state [:ends "AA"])
+        end (get-in state [:ends "ZZ"])]
+    (maze/relabel-dead-paths state #(update %1 :maze merge %2) (comp all-open :maze) open-neighbors #{start end} :wall)))
+
 (defn find-shortest-path
   [state start finish]
   (let [max-search (count (all-open (state :maze)))]
@@ -172,9 +178,10 @@
 (defn solve-maze
   [maze]
   (let [state (load-maze maze)
+        simplified (simpler-maze state)
         start (get-in state [:ends "AA"])
         end (get-in state [:ends "ZZ"])]
-    (find-shortest-path state start end)))
+    (find-shortest-path simplified start end)))
 
 (defn day20-part1-soln
   []

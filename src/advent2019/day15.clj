@@ -1,5 +1,6 @@
 (ns advent2019.day15
-  (:require [manifold.stream :as s]
+  (:require [lanterna.screen :as scr]
+            [manifold.stream :as s]
             [manifold.deferred :as d]
             [advent2019.intcode :as intcode]
             [advent2019.maze :as maze]
@@ -72,8 +73,10 @@
 (defn day15-part1-soln
   []
   (let [maze ((map-maze day15-input) :maze)
+        start [0 0]
         finish (maze/find-target maze :oxygen)
-        path-to-end (find-path maze [0 0] finish)]
+        simplified-maze (maze/relabel-dead-paths maze merge all-open open-neighbors #{start finish} :wall)
+        path-to-end (find-path simplified-maze start finish)]
     (count path-to-end)))
 
 (defn day15-part2-soln
@@ -81,3 +84,18 @@
   (let [maze (:maze (map-maze day15-input))
         oxygen (maze/find-target maze :oxygen)]
     (maze/flood-fill maze oxygen)))
+
+(defn val->str
+  [val]
+  (case val
+    :open "."
+    :wall "#"
+    :oxygen "O"))
+
+(defn show-maze
+  [maze]
+  (let [screen (scr/get-screen :swing {:rows 50 :cols 80})]
+    (scr/start screen)
+    (doseq [[[x y] val] maze]
+      (scr/put-string screen (+ x 40) (+ y 21) (val->str val)))
+    (scr/redraw screen)))
