@@ -63,7 +63,7 @@
   (all-open (maze/better-neighbors maze pos)))
 
 (defn distance
-  [_ _]
+  [_ _ _]
   1)
 
 (defn find-path

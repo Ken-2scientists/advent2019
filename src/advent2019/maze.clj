@@ -142,8 +142,8 @@
   (filter (fn [[k _]] ((complement s) k)) m))
 
 (defn dijkstra-update
-  [distance-fn node {:keys [dist prev] :as state} neighbor]
-  (let [alt (+ (dist node) (distance-fn node neighbor))]
+  [graph distance-fn node {:keys [dist prev] :as state} neighbor]
+  (let [alt (+ (dist node) (distance-fn graph node neighbor))]
     (if (or (nil? (dist neighbor)) (< alt (dist neighbor)))
       {:dist (assoc dist neighbor alt) :prev (assoc prev neighbor node)}
       state)))
@@ -162,7 +162,7 @@
       (if (or (= max-search (count visited)) (= node finish))
         (reverse (dijkstra-retrace (state :prev) finish))
         (let [neighbors (filter (complement visited) (edges-fn graph node))
-              new-state (reduce (partial dijkstra-update distance-fn node) state neighbors)]
+              new-state (reduce (partial dijkstra-update graph distance-fn node) state neighbors)]
           (recur (conj visited node) (ffirst (entries-not-in-set visited (state :dist))) new-state))))))
 
 (defn find-target

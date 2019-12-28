@@ -90,10 +90,12 @@
 (defn load-maze
   [maze]
   (let [labels (label-locations maze)
-        portals (labels->portals labels)]
-    {:labels labels
-     :ends {"AA" (get-in portals ["AA" :outer])
-            "ZZ" (get-in portals ["ZZ" :outer])}
+        portals (labels->portals labels)
+        start (get-in portals ["AA" :outer])
+        end (get-in portals ["ZZ" :outer])]
+    {:labels (dissoc labels start end)
+     :ends {"AA" start
+            "ZZ" end}
      :portals (dissoc portals "AA" "ZZ")
      :dims (maze-dims maze)
      :maze (into {} (filter #(not= :nothing (val %)) (ascii/ascii->map maze-map (trim-maze maze))))}))
@@ -129,7 +131,8 @@
 (defn portal-replace
   [{:keys [labels portals]} pos]
   (let [[name side] (labels pos)]
-    (get-in portals [name (switch-side side)])))
+    (when side
+      (get-in portals [name (switch-side side)]))))
 
 (defn neighbor-fixer
   [state pos n]
@@ -159,7 +162,7 @@
   (all-open (neighbors state pos)))
 
 (defn distance
-  [_ _]
+  [_ _ _]
   ;; Could compute the manhattan distance, but it's always going to be one for the maze
   ;; (u/manhattan p1 p2)
   1)
@@ -217,7 +220,7 @@
 (defn neighbor-coords-3d
   [state [x y z]]
   (let [neighbors (map conj (maze/adj-coords [x y]) (repeat z))]
-    (if (boundary? state [x y z])
+    (if (boundary? state [x y])
       (filter some? (mapv (partial neighbor-fixer-3d state [x y z]) neighbors))
       neighbors)))
 
@@ -240,17 +243,17 @@
                            (top-maze-template [x y])
                            (lower-maze-template [x y]))))))
 
-(defn find-shortest-path-3d
-  [state start finish]
-  (maze/dijkstra state 1000000000 open-neighbors-3d distance start finish))
+; (defn find-shortest-path-3d
+;   [state start finish]
+;   (maze/dijkstra state 1000000000 open-neighbors-3d distance start finish))
 
-(defn solve-recursive-maze
-  [maze]
-  (let [state (load-maze maze)
-        start (conj (get-in state [:ends "AA"]) 0)
-        end (conj (get-in state [:ends "ZZ"]) 0)
-        rmaze (recursive-maze state)]
-    (find-shortest-path-3d rmaze start end)))
+; (defn solve-recursive-maze
+;   [maze]
+;   (let [state (load-maze maze)
+;         start (conj (get-in state [:ends "AA"]) 0)
+;         end (conj (get-in state [:ends "ZZ"]) 0)
+;         rmaze (recursive-maze state)]
+;     (find-shortest-path-3d rmaze start end)))
 
 (defn open-neighbors2
   [maze pos]
@@ -279,11 +282,52 @@
          (group-by first)
          (u/fmap #(apply merge (map second %))))))
 
-(defn top-level-graph
-  [state]
-  (simple-border-adjacents state))
-
-(defn lower-level-graph
+(defn to-graph
   [state]
   (merge (simple-border-adjacents state) (simple-intersection-adjacents state)))
 
+(defn append-if-portal
+  [{:keys [labels portals]} [x y z] edges]
+  (let [maybe-portal (labels [x y])]
+    (if (nil? maybe-portal)
+      edges
+      (let [[name side] maybe-portal
+            [newx newy] (get-in portals [name (switch-side side)])
+            newcoord [newx newy (if (= side :inner) (inc z) (dec z))]]
+        (assoc edges newcoord 1)))))
+
+(defn to-3d
+  [z m]
+  (u/kmap #(conj % z) m))
+
+(defn recursive-maze2
+  [state]
+  (let [top-graph (-> state top-layer simpler-maze-portals to-graph)
+        lower-graph (-> state lower-layer simpler-maze to-graph)]
+    (assoc state :maze (fn [[x y z]]
+                         (if (= z 0)
+                           (append-if-portal state [x y z] (to-3d 0 (top-graph [x y])))
+                           (append-if-portal state [x y z] (to-3d z (lower-graph [x y]))))))))
+
+(defn edges-fn
+  [state node]
+  (keys ((state :maze) node)))
+
+(defn distance-fn
+  [state node1 node2]
+  (((state :maze) node1) node2))
+
+(defn find-shortest-path-3d
+  [state start finish]
+  (let [path (maze/dijkstra state 100000 edges-fn distance-fn start finish)
+        steps (map #(apply (partial distance-fn state) %) (partition 2 1 path))]
+    (println path steps)
+    (reduce + steps)))
+
+(defn solve-recursive-maze
+  [maze]
+  (let [state (load-maze maze)
+        start (conj (get-in state [:ends "AA"]) 0)
+        end (conj (get-in state [:ends "ZZ"]) 0)
+        rmaze (recursive-maze2 state)]
+    (find-shortest-path-3d rmaze start end)))

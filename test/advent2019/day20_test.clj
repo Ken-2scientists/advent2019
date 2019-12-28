@@ -174,5 +174,5 @@
 
 (deftest shortest-path-3d-test
   (testing "Can find the shortest path through the recursive maze"
-    (is (= 26 (dec (count (t/solve-recursive-maze d20-s1)))))
-    (is (= 396 (dec (count (t/solve-recursive-maze d20-s3)))))))
+    (is (= 26 (t/solve-recursive-maze d20-s1)))
+    (is (= 396 (t/solve-recursive-maze d20-s3)))))
