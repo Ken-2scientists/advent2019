@@ -1,6 +1,6 @@
 (ns advent2019.day19
   (:require   [advent2019.intcode :as intcode]
-              [advent2019.utils :as u]))
+              [advent2019.lib.utils :as u]))
 
 (def day19-input (u/puzzle-input-vec "day19-input.txt"))
 

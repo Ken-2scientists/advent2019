@@ -1,7 +1,7 @@
 (ns advent2019.day24
   (:require [advent2019.ascii :as ascii]
             [advent2019.maze :as maze]
-            [advent2019.utils :as u]))
+            [advent2019.lib.utils :as u]))
 
 (def bug-map
   {\. :space

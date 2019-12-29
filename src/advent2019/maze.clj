@@ -1,7 +1,7 @@
 (ns advent2019.maze
   (:require [clojure.string :as str]
             [advent2019.graph :as g :refer [Graph vertices]]
-            [advent2019.utils :as u]))
+            [advent2019.lib.utils :as u]))
 
 (defn relative-direction
   [direction]

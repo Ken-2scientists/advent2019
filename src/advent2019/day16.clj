@@ -1,6 +1,6 @@
 (ns advent2019.day16
   (:require [clojure.string :as str]
-            [advent2019.utils :as u]))
+            [advent2019.lib.utils :as u]))
 
 (defn nums->str
   [nums]
@@ -84,7 +84,6 @@
 (defn day16-part1-soln
   []
   (nums->str (take 8 (run-phases day16-input 100))))
-
 
 (defn real-signal
   [nums phases]

@@ -1,6 +1,6 @@
 (ns advent2019.day14
   (:require [clojure.string :as str]
-            [advent2019.utils :as u]))
+            [advent2019.lib.utils :as u]))
 
 (defn parse-component
   [comp-str]

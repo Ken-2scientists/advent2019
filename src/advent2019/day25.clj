@@ -1,7 +1,7 @@
 (ns advent2019.day25
   (:require [clojure.math.combinatorics :as combo]
             [advent2019.intcode :as intcode]
-            [advent2019.utils :as u]))
+            [advent2019.lib.utils :as u]))
 
 (def day25-input (u/puzzle-input-vec "day25-input.txt"))
 (def day25-cmds (u/puzzle-input "day25-cmds.txt"))

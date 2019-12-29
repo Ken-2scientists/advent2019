@@ -1,6 +1,7 @@
 (ns advent2019.day12
   (:require [clojure.string :as str]
-            [advent2019.utils :as u]))
+            [advent2019.lib.math :as math]
+            [advent2019.lib.utils :as u]))
 
 (defn parse-coord
   [s]
@@ -84,21 +85,9 @@
                      :z (map (comp vector last) moons))]
     (inc (u/index-of 0 (rest (map total-energy (simulate-axis axis-moons)))))))
 
-(defn gcd
-  [a b]
-  (if (zero? b)
-    a
-    (recur b (mod a b))))
-
-(defn lcm
-  [a b]
-  (/ (* a b) (gcd a b)))
-
-(defn lcmv [& v] (reduce lcm v))
-
 (defn recurrence-period
   [moons]
-  (* 2 (apply lcmv (pmap axis-period [:x :y :z] (repeat moons)))))
+  (* 2 (apply math/lcm (pmap axis-period [:x :y :z] (repeat moons)))))
 
 (defn day12-part2-soln
   []

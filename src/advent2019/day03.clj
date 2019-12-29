@@ -1,7 +1,7 @@
 (ns advent2019.day03
   (:require [clojure.string :as str]
             [clojure.set]
-            [advent2019.utils :as u]))
+            [advent2019.lib.utils :as u]))
 
 (def day03-input
   (->> (u/puzzle-input "day03-input.txt")
@@ -61,7 +61,6 @@
   [path]
   (let [len (count path)]
     (zipmap (reverse path) (reverse (range len)))))
-
 
 (defn distances-to-intersections
   [[wire1 wire2]]

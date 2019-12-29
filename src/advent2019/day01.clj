@@ -1,5 +1,5 @@
 (ns advent2019.day01
-  (:require [advent2019.utils :as u]))
+  (:require [advent2019.lib.utils :as u]))
 
 (def day01-input
   (map read-string (u/puzzle-input "day01-input.txt")))

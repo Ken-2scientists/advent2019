@@ -1,6 +1,7 @@
 (ns advent2019.day22
   (:require [clojure.string :as str]
-            [advent2019.utils :as u]))
+            [advent2019.lib.math :as math]
+            [advent2019.lib.utils :as u]))
 
 (defn parse-line
   [line]
@@ -47,7 +48,6 @@
   []
   (u/index-of 2019 (shuffle-deck 10007 day22-input)))
 
-
 (defn deal-single
   [size pos]
   (- (dec size) pos))
@@ -62,7 +62,7 @@
       (+ pos (+ size arg))
       (+ pos arg))))
 
-(def mod-inv-memo (memoize u/mod-inverse))
+(def mod-inv-memo (memoize math/mod-inverse))
 
 (defn increment-single
   [size arg pos]
@@ -86,7 +86,6 @@
     (if (= val (first s))
       (inc count)
       (recur (drop 1 s) (inc count)))))
-
 
 (defn card-after-multiple-shuffles
   [size steps times position]

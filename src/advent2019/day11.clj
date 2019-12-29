@@ -2,7 +2,7 @@
   (:require [manifold.stream :as s]
             [manifold.deferred :as d]
             [advent2019.intcode :as intcode]
-            [advent2019.utils :as u]))
+            [advent2019.lib.utils :as u]))
 
 (def day11-input (u/puzzle-input-vec "day11-input.txt"))
 

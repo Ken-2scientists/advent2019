@@ -1,5 +1,6 @@
 (ns advent2019.day10
-  (:require [advent2019.utils :as u]))
+  (:require [advent2019.lib.math :as math]
+            [advent2019.lib.utils :as u]))
 
 (defn parse-map
   [ascii-asteroids]
@@ -71,7 +72,7 @@
 
 (defn sort-by-distance
   [x others]
-  (sort-by (partial u/manhattan x) others))
+  (sort-by (partial math/manhattan x) others))
 
 (defn pad-coll
   [size coll]

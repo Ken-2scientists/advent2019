@@ -3,7 +3,7 @@
             [advent2019.ascii :as ascii]
             [advent2019.graph :as g :refer [Graph distance]]
             [advent2019.maze :as maze :refer [->Maze]]
-            [advent2019.utils :as u]))
+            [advent2019.lib.utils :as u]))
 
 (def day20-input (vec (u/puzzle-input "day20-input.txt")))
 

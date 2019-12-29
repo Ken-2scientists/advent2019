@@ -1,6 +1,6 @@
 (ns advent2019.ascii
   (:require [clojure.string :as str]
-            [advent2019.utils :as u]))
+            [advent2019.lib.utils :as u]))
 
 (defn ascii->map
   [codes lines]
