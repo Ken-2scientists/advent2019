@@ -1,6 +1,6 @@
-(ns advent2019.intcode-test
+(ns advent2019.lib.intcode-test
   (:require [clojure.test :refer [deftest testing is]]
-            [advent2019.intcode :as t]))
+            [advent2019.lib.intcode :as t]))
 
 (def input1 [1 9 10 3 2 3 11 0 99 30 40 50])
 (def output1 [3500 9 10 70 2 3 11 0 99 30 40 50])

@@ -2,9 +2,9 @@
   (:require [lanterna.screen :as scr]
             [manifold.stream :as s]
             [manifold.deferred :as d]
-            [advent2019.intcode :as intcode]
-            [advent2019.graph :as g]
-            [advent2019.maze :as maze :refer [->Maze]]
+            [advent2019.lib.intcode :as intcode]
+            [advent2019.lib.graph :as g]
+            [advent2019.lib.maze :as maze :refer [->Maze]]
             [advent2019.lib.utils :as u]))
 
 (def day15-input (u/puzzle-input-vec "day15-input.txt"))

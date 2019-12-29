@@ -1,6 +1,6 @@
 (ns advent2019.day24-test
   (:require [clojure.test :refer [deftest testing is]]
-            [advent2019.ascii :as a]
+            [advent2019.lib.ascii :as a]
             [advent2019.day24 :as t]))
 
 (def d24-s1       (a/ascii->map t/bug-map ["....#" "#..#." "#..##" "..#.." "#...."]))

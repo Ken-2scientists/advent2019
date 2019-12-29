@@ -1,4 +1,4 @@
-(ns advent2019.graph
+(ns advent2019.lib.graph
   (:require [clojure.data.priority-map :refer [priority-map]]))
 
 (defprotocol Graph

@@ -2,7 +2,7 @@
   (:require [clojure.math.combinatorics :as combo]
             [manifold.stream :as s]
             [manifold.deferred :as d]
-            [advent2019.intcode :as intcode]
+            [advent2019.lib.intcode :as intcode]
             [advent2019.lib.utils :as u]))
 
 (def day07-input (u/puzzle-input-vec "day07-input.txt"))

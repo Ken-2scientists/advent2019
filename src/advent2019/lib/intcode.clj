@@ -1,4 +1,4 @@
-(ns advent2019.intcode
+(ns advent2019.lib.intcode
   (:require [clojure.string :as str]
             [manifold.stream :as s]))
 

@@ -1,4 +1,4 @@
-(ns advent2019.ascii
+(ns advent2019.lib.ascii
   (:require [clojure.string :as str]
             [advent2019.lib.utils :as u]))
 
