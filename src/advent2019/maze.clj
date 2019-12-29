@@ -1,6 +1,6 @@
 (ns advent2019.maze
   (:require [clojure.string :as str]
-            [clojure.data.priority-map :refer [priority-map]]
+            [advent2019.graph :as g :refer [Graph vertices]]
             [advent2019.utils :as u]))
 
 (defn relative-direction
@@ -46,6 +46,24 @@
       :west {:forward west :left south :backward east :right north}
       :south {:forward south :left east :backward north :right west}
       :east {:forward east :left north :backward west :right south})))
+
+(defn all-open
+  [open? maze]
+  (map first (filter #(open? (val %)) maze)))
+
+(defrecord Maze [maze open?]
+  Graph
+  (vertices
+    [_]
+    (all-open open? maze))
+
+  (edges
+    [_ v]
+    (all-open open? (better-neighbors maze v)))
+
+  (distance
+    [_ _ _]
+    1))
 
 (defn follow-left-wall
   [neighbors]
@@ -133,80 +151,20 @@
             updates (merge newmaze (zipmap changes (repeat :oxygen)))]
         (recur updates changes (inc count))))))
 
-(defn entries-in-set
-  [s m]
-  (filter (fn [[k _]] (s k)) m))
-
-(defn entries-not-in-set
-  [s m]
-  (filter (fn [[k _]] ((complement s) k)) m))
-
-(defn dijkstra-update
-  [graph distance-fn node {:keys [dist prev] :as state} neighbor]
-  (let [alt (+ (dist node) (distance-fn graph node neighbor))]
-    (if (or (nil? (dist neighbor)) (< alt (dist neighbor)))
-      {:dist (assoc dist neighbor alt) :prev (assoc prev neighbor node)}
-      state)))
-
-(defn dijkstra-retrace
-  [prev-steps finish]
-  (loop [node finish chain []]
-    (if (nil? node)
-      chain
-      (recur (prev-steps node) (conj chain node)))))
-
-(defn dijkstra
-  [graph max-search edges-fn distance-fn start finish]
-  (let [init-state {:dist (priority-map start 0) :prev {}}]
-    (loop [visited #{} node start state init-state]
-      (if (or (= max-search (count visited)) (= node finish))
-        (reverse (dijkstra-retrace (state :prev) finish))
-        (let [neighbors (filter (complement visited) (edges-fn graph node))
-              new-state (reduce (partial dijkstra-update graph distance-fn node) state neighbors)]
-          (recur (conj visited node) (ffirst (entries-not-in-set visited (state :dist))) new-state))))))
-
 (defn find-target
   [maze target]
   (ffirst (filter #(= target (val %)) maze)))
 
-(defn dead-end?
-  [graph edges-fn pos]
-  (= 1 (count (edges-fn graph pos))))
-
-(defn only-available-path
-  "Find the only available path until a choice is presented"
-  [graph edges-fn start]
-  (loop [visited [start] neighbors (edges-fn graph start)]
-    (if (or (> (count neighbors) 1) (= (count neighbors) 0))
-      visited
-      (recur (conj visited (first neighbors))
-             (filter (complement (set visited)) (edges-fn graph (first neighbors)))))))
-
-(defn only-available-path-from-junction
-  "Find the only available path starting at a junction from one neighbor"
-  [graph edges-fn junction start]
-  (loop [visited [junction start] neighbors (filter (complement #{junction}) (edges-fn graph start))]
-    (if (or (> (count neighbors) 1) (= (count neighbors) 0))
-      visited
-      (recur (conj visited (first neighbors))
-             (filter (complement (set visited)) (edges-fn graph (first neighbors)))))))
-
-(defn paths-from-junction
-  "Find the paths outward from a junction until the next junction or an end is reached"
-  [graph edges-fn junction]
-  (let [neighbors (edges-fn graph junction)]
-    (mapv (partial only-available-path-from-junction graph edges-fn junction) neighbors)))
-
 (defn relabel-dead-paths
-  [graph update-fn vertices-fn edges-fn exclude-set label]
+  [graph exclude-set label]
   (loop [newgraph graph]
-    (let [dead-end-pred (every-pred (partial dead-end? newgraph edges-fn) (complement exclude-set))
-          dead-ends (filter dead-end-pred (vertices-fn newgraph))]
+    (let [dead-end-pred (every-pred (partial g/leaf? newgraph) (complement exclude-set))
+          dead-ends (filter dead-end-pred (vertices newgraph))]
       (if (= 0 (count dead-ends))
         newgraph
-        (recur (update-fn newgraph
-                          (zipmap (mapcat #(butlast (only-available-path newgraph edges-fn %)) dead-ends)
-                                  (repeat label))))))))
+        (recur (update newgraph :maze merge
+                       (zipmap (mapcat #(butlast (g/single-path newgraph %)) dead-ends)
+                               (repeat label))))))))
 
 (defn printable-maze
   [charmap {:keys [maze] {:keys [width height]} :dims}]

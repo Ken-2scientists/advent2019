@@ -3,7 +3,8 @@
             [manifold.stream :as s]
             [manifold.deferred :as d]
             [advent2019.intcode :as intcode]
-            [advent2019.maze :as maze]
+            [advent2019.graph :as g]
+            [advent2019.maze :as maze :refer [->Maze]]
             [advent2019.utils :as u]))
 
 (def day15-input (u/puzzle-input-vec "day15-input.txt"))
@@ -38,8 +39,8 @@
 
 (defn droid-step
   [in out {:keys [maze position direction] :as state}]
-  (let [dir (maze/maze-mapper maze position direction)
-        _ (s/put! in (dir->code dir))
+  (let [dir    (maze/maze-mapper maze position direction)
+        _      (s/put! in (dir->code dir))
         result (status @(s/try-take! out 20))]
     (update-mazemap (assoc state :direction dir) result)))
 
@@ -54,28 +55,16 @@
         state
         (recur (stepper state))))))
 
-(defn all-open
-  [maze]
-  (map first (filter #(not= :wall (val %)) maze)))
-
-(defn open-neighbors
-  [maze pos]
-  (all-open (maze/better-neighbors maze pos)))
-
-(defn distance
-  [_ _ _]
-  1)
-
 (defn find-path
   [maze start finish]
-  (maze/dijkstra maze (count (all-open maze)) open-neighbors distance start finish))
+  (g/dijkstra maze start finish))
 
 (defn day15-part1-soln
   []
-  (let [maze ((map-maze day15-input) :maze)
+  (let [maze (->Maze (:maze (map-maze day15-input)) #(not= :wall %))
         start [0 0]
-        finish (maze/find-target maze :oxygen)
-        simplified-maze (maze/relabel-dead-paths maze merge all-open open-neighbors #{start finish} :wall)
+        finish (maze/find-target (:maze maze) :oxygen)
+        simplified-maze (maze/relabel-dead-paths maze #{start finish} :wall)
         path-to-end (find-path simplified-maze start finish)]
     (dec (count path-to-end))))
 
