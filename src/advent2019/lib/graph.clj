@@ -67,12 +67,26 @@
        (recur (conj visited (first neighbors))
               (filter (complement (set visited)) (edges g (first neighbors))))))))
 
+(defn single-path-2
+  "Return the only possible path traversal from the start vertex (presumed to be a leaf vertex)
+   until reaching another leaf vertex or a vertex with more than one un-traversed edge"
+  ([g v s stop-at]
+   (loop [visited [s v]
+          neighbors (filter (complement #{s}) (edges g v))]
+     (if (or (> (count neighbors) 1)
+             (= (count neighbors) 0)
+             (some? (stop-at (last visited))))
+       visited
+       (recur (conj visited (first neighbors))
+              (filter (complement (set visited)) (edges g (first neighbors))))))))
+
 (defn all-paths
   "Find all the paths from a vertex reaching a leaf vertex or a vertex with more than one
   untraversed edges"
-  [g v]
-  (let [neighbors (edges g v)]
-    (map #(single-path g % :exclude v) neighbors)))
+  [g v & {:keys [excludes]}]
+  (let [neighbors (edges g v)
+        stop-at (if excludes (set excludes) #{})]
+    (map #(single-path-2 g % v stop-at) neighbors)))
 
 (defn- dijkstra-update
   [graph vertex {:keys [dist prev] :as state} neighbor]

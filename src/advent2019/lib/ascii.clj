@@ -5,12 +5,12 @@
 (defn ascii->map
   [codes lines]
   (let [row-count (count lines)
-        symbols (map #(map codes %) lines)
-        col-count (count (first symbols))]
+        col-count (count (first lines))
+        symbols (mapcat #(map codes %) lines)]
     (zipmap (for [y (range row-count)
                   x (range col-count)]
               [x y])
-            (flatten symbols))))
+            symbols)))
 
 (defn map->string
   [codes themap rows cols]
