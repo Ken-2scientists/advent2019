@@ -267,7 +267,7 @@
 
 (defn open-neighbors2
   [maze pos]
-  (all-open (maze/better-neighbors maze pos)))
+  (all-open (maze/neighbors maze pos)))
 
 (defn summarize-path
   [path]

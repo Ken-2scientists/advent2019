@@ -30,7 +30,7 @@
 (defn intersection?
   [space pos]
   (if (= :scaffold (space pos))
-    (every? #(= :scaffold %) (vals (maze/better-neighbors space pos)))
+    (every? #(= :scaffold %) (vals (maze/neighbors space pos)))
     false))
 
 (defn intersections

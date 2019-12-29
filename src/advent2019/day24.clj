@@ -31,12 +31,11 @@
 
 (defn conway-rule-2d
   [space pos]
-  (conway-rule space pos maze/better-neighbors))
+  (conway-rule space pos maze/neighbors))
 
 (defn conway-step-2d
   [space]
   (conway-step space conway-rule-2d))
-
 
 (defn biodiversity
   [space]
