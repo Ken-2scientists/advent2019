@@ -4,7 +4,8 @@
 (defprotocol Graph
   (vertices [this] "A collection of all the vertices in the graph")
   (edges [this v] "A collection of the edges for the given vertex in the graph")
-  (distance [this v1 v2] "The distance (or edge weight) between two vertices"))
+  (distance [this v1 v2] "The distance (or edge weight) between two vertices")
+  (without-vertex [this v] "Produces a new graph with the vertex removed"))
 
 (defrecord MapGraph [graph]
   Graph
@@ -18,7 +19,14 @@
 
   (distance
     [_ v1 v2]
-    (get-in graph [v1 v2])))
+    (get-in graph [v1 v2]))
+
+  (without-vertex
+    [_ v]
+    (let [neighbors (keys (graph v))
+          newgraph (-> (reduce #(update %1 %2 dissoc v) graph neighbors)
+                       (dissoc v))]
+      (->MapGraph newgraph))))
 
 (defn degree
   "The degree of a vertex is the number of edges it has"
@@ -33,7 +41,12 @@
 (defn junction?
   "Whether a vertex is a junction (meaning that it has more than two edges)"
   [g v]
-  (> 2 (degree g v)))
+  (> (degree g v) 2))
+
+(defn path-distance
+  "Computes the distance along a path (an ordered collection of vertices)"
+  [g path]
+  (reduce + (map #(apply (partial distance g) %) (partition 2 1 path))))
 
 (defn entries-in-set
   [s m]
@@ -86,3 +99,13 @@
         (let [neighbors (filter (complement visited) (edges graph vertex))
               new-state (reduce (partial dijkstra-update graph vertex) state neighbors)]
           (recur (conj visited vertex) (ffirst (entries-not-in-set visited (state :dist))) new-state))))))
+
+(defn pruned
+  "Prunes the single branches from a graph, excluding any vertices in the exclude-set"
+  [graph exclude-set]
+  (loop [newgraph graph]
+    (let [dead-end-pred (every-pred (partial leaf? newgraph) (complement exclude-set))
+          dead-ends (filter dead-end-pred (vertices newgraph))]
+      (if (= 0 (count dead-ends))
+        newgraph
+        (recur (reduce without-vertex newgraph dead-ends))))))

@@ -33,6 +33,12 @@
   [f m]
   (zipmap (map f (keys m)) (vals m)))
 
+(defn rotate
+  "Rotate the collection by n"
+  [n coll]
+  (let [size (count coll)]
+    (take size (drop (mod n size) (cycle coll)))))
+
 (defn index-of
   [x coll]
   (ffirst (filter #(= x (second %)) (map-indexed vector coll))))

@@ -1,32 +1,27 @@
 (ns advent2019.lib.maze
   (:require [clojure.string :as str]
-            [advent2019.lib.graph :as g :refer [Graph vertices]]
+            [advent2019.lib.graph :as g :refer [Graph vertices ->MapGraph]]
             [advent2019.lib.utils :as u]))
+
+(def relative-dirs [:forward :left :backward :right])
+(def cardinal-dirs [:north :west :south :east])
 
 (defn relative-direction
   [direction]
-  (case direction
-    :north {:forward :north :left :west :backward :south :right :east}
-    :west {:forward :west :left :south :backward :east :right :north}
-    :south {:forward :south :left :east :backward :north :right :west}
-    :east {:forward :east :left :north :backward :west :right :south}))
+  (zipmap relative-dirs (u/rotate (u/index-of direction cardinal-dirs) cardinal-dirs)))
 
 (defn next-direction
   [direction turn]
   ((relative-direction direction) turn))
 
-(defn one-step
-  [[x y] direction]
-  (case direction
-    :north [x (dec y)]
-    :south [x (inc y)]
-    :east [(inc x) y]
-    :west [(dec x) y]))
-
 (defn adj-coords
-  "Coordinates of four adjacent points, always in the order n w s e"
+  "Coordinates of four adjacent points, always in the order N W S E"
   [[x y]]
   [[x (dec y)] [(dec x) y] [x (inc y)] [(inc x) y]])
+
+(defn one-step
+  [pos direction]
+  ((adj-coords pos) (u/index-of direction cardinal-dirs)))
 
 (defn neighbors
   [maze pos]
@@ -36,12 +31,24 @@
 
 (defn relative-neighbors
   [maze pos direction]
-  (let [[north west south east] (mapv maze (adj-coords pos))]
-    (case direction
-      :north {:forward north :left west :backward south :right east}
-      :west {:forward west :left south :backward east :right north}
-      :south {:forward south :left east :backward north :right west}
-      :east {:forward east :left north :backward west :right south})))
+  (let [neighbor-vals (mapv maze (adj-coords pos))]
+    (zipmap relative-dirs (u/rotate (u/index-of direction cardinal-dirs) neighbor-vals))))
+
+(defn follow-left-wall
+  [neighbors]
+  (case (neighbors :left)
+    :open :left
+    nil :left
+    :wall (if (= :wall (neighbors :forward))
+            (if (= :wall (neighbors :right))
+              :backward
+              :right)
+            :forward)))
+
+(defn maze-mapper
+  [maze position direction]
+  (let [neighbors (relative-neighbors maze position direction)]
+    (next-direction direction (follow-left-wall neighbors))))
 
 (defn all-open
   [open? maze]
@@ -59,23 +66,29 @@
 
   (distance
     [_ _ _]
-    1))
+    1)
 
-(defn follow-left-wall
-  [neighbors]
-  (case (neighbors :left)
-    :open :left
-    nil :left
-    :wall (if (= :wall (neighbors :forward))
-            (if (= :wall (neighbors :right))
-              :backward
-              :right)
-            :forward)))
+  (without-vertex
+    [_ v]
+    (->Maze (assoc maze v :wall))))
 
-(defn maze-mapper
-  [maze position direction]
-  (let [neighbors (relative-neighbors maze position direction)]
-    (next-direction direction (follow-left-wall neighbors))))
+(defn summarize-path
+  [path]
+  [(first path) {(last path) (dec (count path))}])
+
+(defn adjacencies
+  [maze]
+  (let [leaves (filter (partial g/leaf? maze) (vertices maze))
+        junctions (filter (partial g/junction? maze) (vertices maze))
+        nodes (concat leaves junctions)]
+    (->> (mapcat (partial g/all-paths maze) nodes)
+         (map summarize-path)
+         (group-by first)
+         (u/fmap #(apply merge (map second %))))))
+
+(defn Maze->Graph
+  [maze]
+  (->MapGraph (adjacencies maze)))
 
 (defn spread-to-adjacent
   [maze [x y]]
@@ -96,6 +109,7 @@
   [maze target]
   (ffirst (filter #(= target (val %)) maze)))
 
+;; Candidate for being removed shortly --- use g/pruned instead.
 (defn relabel-dead-paths
   [graph exclude-set label]
   (loop [newgraph graph]

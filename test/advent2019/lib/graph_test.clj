@@ -1,6 +1,6 @@
 (ns advent2019.lib.graph-test
   (:require [clojure.test :refer [deftest testing is]]
-            [advent2019.lib.graph :as g :refer [->MapGraph]]))
+            [advent2019.lib.graph :as g :refer [without-vertex ->MapGraph]]))
 
 (def t1 (->MapGraph {:a {:b 1}
                      :b {:a 1 :c 2}
@@ -22,6 +22,19 @@
                      :d {:a 9 :b 10 :c 2 :e 11}
                      :e {:b 15 :d 11 :f 6}
                      :f {:c 9 :e 6}}))
+
+(deftest without-vertex-test
+  (testing "Can return a new graph with a vertex (and its corresponding edges) removed"
+    (is (= (->MapGraph {:b {:c 2}, :c {:b 2, :d 3}, :d {:c 3, :e 1}, :e {:d 1}})
+           (without-vertex t1 :a)))))
+
+(deftest pruned-test
+  (testing "Can prune a graph of unnecessary branches"
+    (is (= (g/pruned t2 #{:a :g})
+           (->MapGraph {:a {:b 1}
+                        :b {:a 1 :f 4}
+                        :f {:b 4 :g 1}
+                        :g {:f 1}})))))
 
 (deftest single-path-test
   (testing "Can traverse a graph until its end or a junction is reached"

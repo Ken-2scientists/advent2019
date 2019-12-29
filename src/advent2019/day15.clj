@@ -20,17 +20,9 @@
    1 :open
    2 :oxygen})
 
-(defn tried-position
-  [[x y] direction]
-  (case direction
-    :north [x (dec y)]
-    :south [x (inc y)]
-    :east [(inc x) y]
-    :west [(dec x) y]))
-
 (defn update-mazemap
   [{:keys [maze position direction] :as state} result]
-  (let [tested-pos (tried-position position direction)
+  (let [tested-pos (maze/one-step position direction)
         new-maze (assoc maze tested-pos result)]
     (case result
       :wall (merge state {:maze new-maze} {:direction (maze/next-direction direction :right)})
@@ -52,7 +44,7 @@
         _ (d/future (intcode/intcode-ex-async intcode in out))]
     (loop [state {:maze {[0,0] :open} :position [0,0] :direction :north}]
       (if (and (> (count (state :maze)) 100) (= [0 0] (state :position)))
-        state
+        (->Maze (:maze state) (partial not= :wall))
         (recur (stepper state))))))
 
 (defn find-path
@@ -61,12 +53,12 @@
 
 (defn day15-part1-soln
   []
-  (let [maze (->Maze (:maze (map-maze day15-input)) #(not= :wall %))
+  (let [maze (map-maze day15-input)
         start [0 0]
         finish (maze/find-target (:maze maze) :oxygen)
-        simplified-maze (maze/relabel-dead-paths maze #{start finish} :wall)
-        path-to-end (find-path simplified-maze start finish)]
-    (dec (count path-to-end))))
+        simplified-maze (-> maze maze/Maze->Graph (g/pruned #{start finish}))
+        path (g/dijkstra simplified-maze start finish)]
+    (g/path-distance simplified-maze path)))
 
 (defn day15-part2-soln
   []
