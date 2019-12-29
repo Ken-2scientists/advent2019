@@ -73,8 +73,8 @@
     (->Maze (assoc maze v :wall))))
 
 (defn summarize-path
-  [path]
-  [(first path) {(last path) (dec (count path))}])
+  [g path]
+  [(first path) {(last path) (g/path-distance g path)}])
 
 (defn adjacencies
   [maze]
@@ -82,7 +82,7 @@
         junctions (filter (partial g/junction? maze) (vertices maze))
         nodes (concat leaves junctions)]
     (->> (mapcat (partial g/all-paths maze) nodes)
-         (map summarize-path)
+         (map (partial summarize-path maze))
          (group-by first)
          (u/fmap #(apply merge (map second %))))))
 
@@ -108,18 +108,6 @@
 (defn find-target
   [maze target]
   (ffirst (filter #(= target (val %)) maze)))
-
-;; Candidate for being removed shortly --- use g/pruned instead.
-(defn relabel-dead-paths
-  [graph exclude-set label]
-  (loop [newgraph graph]
-    (let [dead-end-pred (every-pred (partial g/leaf? newgraph) (complement exclude-set))
-          dead-ends (filter dead-end-pred (vertices newgraph))]
-      (if (= 0 (count dead-ends))
-        newgraph
-        (recur (update newgraph :maze merge
-                       (zipmap (mapcat #(butlast (g/single-path newgraph %)) dead-ends)
-                               (repeat label))))))))
 
 (defn printable-maze
   [charmap {:keys [maze] {:keys [width height]} :dims}]

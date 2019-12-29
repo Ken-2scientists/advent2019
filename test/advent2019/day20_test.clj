@@ -1,5 +1,6 @@
 (ns advent2019.day20-test
   (:require [clojure.test :refer [deftest testing is]]
+            [advent2019.lib.graph :as g :refer [edges]]
             [advent2019.day20 :as t]))
 
 (def d20-s1
@@ -82,51 +83,18 @@
             [0 15] ["ZZ" :outer]}
            (t/label-locations d20-s2)))))
 
-(deftest boundary-test
-  (testing "Can identify when the position is an inner or outer boundary"
-    (let [state {:dims (t/maze-dims d20-s1)} ]
-      (is (= true (t/boundary? state [0 0])))
-      (is (= false (t/boundary? state [1 1])))
-      (is (= true (t/boundary? state [16 3])))
-      (is (= true (t/boundary? state [0 14])))
-      (is (= true (t/boundary? state [4 14])))      
-      (is (= true (t/boundary? state [5 4])))
-      (is (= false (t/boundary? state [4 4])))
-      (is (= true (t/boundary? state [4 5])))
-      (is (= true (t/boundary? state [11 4])))
-      (is (= false (t/boundary? state [12 4])))
-      (is (= true (t/boundary? state [12 5])))
-      (is (= true (t/boundary? state [4 9])))
-      (is (= false (t/boundary? state [4 10])))
-      (is (= true (t/boundary? state [5 10])))
-      (is (= true (t/boundary? state [11 10])))
-      (is (= false (t/boundary? state [12 10])))
-      (is (= true (t/boundary? state [12 9]))))))
-
-(deftest outside-test
-  (testing "Can identify when the position is 'outside' the maze"
-    (let [state {:dims (t/maze-dims d20-s1)}]
-      (is (= true (t/outside? state [-1 0])))
-      (is (= false (t/outside? state [0 0])))
-      (is (= true (t/outside? state [17 3])))
-      (is (= true (t/outside? state [-1 14])))
-      (is (= true (t/outside? state [4 15])))
-      (is (= true (t/outside? state [5 5])))
-      (is (= true (t/outside? state [11 5])))
-      (is (= true (t/outside? state [5 9])))
-      (is (= true (t/outside? state [11 9]))))))
 
 (deftest neighbor-coords-test
   (testing "Neighbor lookup follows portals"
-    (let [state (t/load-maze d20-s1)]
-      (is (= [[7 3] [6 4] [0 6] [8 4]] (t/neighbor-coords state [7 4])))
-      (is (= [[4 7] [3 8] [4 9] [0 11]] (t/neighbor-coords state [4 8])))
-      (is (= [[0 12] [9 10] [0 14] [1 13]] (t/neighbor-coords state [0 13]))))))
+    (let [graph (:graph (t/maze-with-portals (t/load-maze d20-s1)))]
+      (is (= [[7 1] [0 6]] (edges graph [7 4])))
+      (is (= [[0 6] [0 11]] (edges graph [4 8])))
+      (is (= [[0 11] [9 10]] (edges graph [0 13]))))))
 
 (deftest shortest-path-test
   (testing "Can find the shortest path when using portals"
-    (is (= 23 (dec (count (t/solve-maze d20-s1)))))
-    (is (= 58 (dec (count (t/solve-maze d20-s2)))))))
+    (is (= 23 (t/solve-maze d20-s1)))
+    (is (= 58 (t/solve-maze d20-s2)))))
 
 (deftest day20-part1-soln-test
   (testing "Can reproduce the solution for part1"
@@ -176,3 +144,8 @@
   (testing "Can find the shortest path through the recursive maze"
     (is (= 26 (t/solve-recursive-maze d20-s1)))
     (is (= 396 (t/solve-recursive-maze d20-s3)))))
+
+; Too slow to include in ongoing tests
+;(deftest day20-part2-soln-test
+;  (testing "Can reproduce the solution for part2"
+;    (is (= 6592 (t/day20-part2-soln)))))

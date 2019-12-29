@@ -1,7 +1,7 @@
 (ns advent2019.day20
   (:require [clojure.string :as str]
             [advent2019.lib.ascii :as ascii]
-            [advent2019.lib.graph :as g :refer [Graph distance]]
+            [advent2019.lib.graph :as g :refer [Graph ->MapGraph without-vertex edges distance]]
             [advent2019.lib.maze :as maze :refer [->Maze]]
             [advent2019.lib.utils :as u]))
 
@@ -88,213 +88,87 @@
   (let [by-label (group-by (comp first second) labels)]
     (u/fmap #(into {} (map (fn [[k v]] [(second v) k]) %)) by-label)))
 
-(defn boundary?
-  [{{:keys [width height thickness]} :dims} [x y]]
-  (or (= 0 x)
-      (= (dec width) x)
-      (= 0 y)
-      (= (dec height) y)
-      (and (= (dec thickness) x) (> y (dec thickness)) (< y (- height thickness)))
-      (and (= (- width thickness) x) (> y (dec thickness)) (< y (- height thickness)))
-      (and (= (dec thickness) y) (> x (dec thickness)) (< x (- width thickness)))
-      (and (= (- height thickness) y) (> x (dec thickness)) (< x (- width thickness)))))
-
-(defn outside?
-  [{{:keys [width height thickness]} :dims} [x y]]
-  (or (= x -1)
-      (= x width)
-      (= y -1)
-      (= y height)
-      (and (= thickness x) (> y (dec thickness)) (< y (- height thickness)))
-      (and (= (dec (- width thickness)) x) (> y (dec thickness)) (< y (- height thickness)))
-      (and (= thickness y) (> x (dec thickness)) (< x (- width thickness)))
-      (and (= (dec (- height thickness)) y) (> x (dec thickness)) (< x (- width thickness)))))
-
 (defn switch-side
   [side]
   (case side
     :inner :outer
     :outer :inner))
 
-(defn portal-replace
-  [{:keys [labels portals]} pos]
-  (let [[name side] (labels pos)]
-    (when side
-      (get-in portals [name (switch-side side)]))))
-
-(defn neighbor-fixer
-  [state pos n]
-  (if (outside? state n)
-    (portal-replace state pos)
-    n))
-
-(defn neighbor-coords
-  [state pos]
-  (let [neighbors (maze/adj-coords pos)]
-    (if (boundary? state pos)
-      (filter some? (mapv (partial neighbor-fixer state pos) neighbors))
-      neighbors)))
-
-(defn neighbors
-  [state pos]
-  (let [coords (neighbor-coords state pos)
-        vals (map (:maze state) coords)]
-    (zipmap coords vals)))
-
-(defn all-open
-  [maze]
-  (map first (filter #(= :open (val %)) maze)))
-
-(defn open-neighbors
-  [state pos]
-  (all-open (neighbors state pos)))
-
-(defrecord PortalMaze [labels portals ends dims maze]
-  Graph
-  (vertices
-    [_]
-    (all-open maze))
-
-  (edges
-    [this v]
-    (all-open (neighbors this v)))
-
-  (distance
-    [_ _ _]
-    1))
+(defn portal-edges
+  [portals]
+  (->> (vals portals)
+       (map vals)
+       (mapcat (fn [[a b]] {a {b 1} b {a 1}}))))
 
 (defn load-maze
   [maze]
   (let [labels  (label-locations maze)
         portals (labels->portals labels)
         start   (get-in portals ["AA" :outer])
-        end     (get-in portals ["ZZ" :outer])]
-    (map->PortalMaze
-     {:labels  (dissoc labels start end)
-      :portals (dissoc portals "AA" "ZZ")
-      :ends    {"AA" start
-                "ZZ" end}
-      :dims    (maze-dims maze)
-      :maze    (into {} (filter #(not= :nothing (val %))
-                                (ascii/ascii->map maze-map (trim-maze maze))))})))
+        end     (get-in portals ["ZZ" :outer])
+        themaze (->Maze (->> maze
+                             trim-maze
+                             (ascii/ascii->map maze-map)
+                             (filter #(not= :nothing (val %)))
+                             (into {}))
+                        (partial = :open))
+        graph   (-> themaze
+                    maze/Maze->Graph
+                    (g/pruned (set (keys labels))))]
+    {:labels  (dissoc labels start end)
+     :portals (dissoc portals "AA" "ZZ")
+     :ends    {"AA" start "ZZ" end}
+     :dims    (maze-dims maze)
+     :graph   graph}))
 
-(defn simpler-maze
-  [state]
-  (let [start (get-in state [:ends "AA"])
-        end (get-in state [:ends "ZZ"])]
-    (maze/relabel-dead-paths state #{start end} :wall)))
-
-(defn simpler-maze-portals
-  [{:keys [ends portals] :as state}]
-  (let [excludes (into #{(ends "AA") (ends "ZZ")} (map :inner (vals portals)))]
-    (maze/relabel-dead-paths state excludes :wall)))
-
-(defn find-shortest-path
-  [state start finish]
-  (g/dijkstra state start finish))
+(defn maze-with-portals
+  [{:keys [graph portals] :as state}]
+  (let [portal-edges (portal-edges portals)
+        graph-with-portals (reduce
+                            (fn [g [k v]]
+                              (update-in g [:graph k] merge v))
+                            graph portal-edges)]
+    (assoc state :graph graph-with-portals)))
 
 (defn solve-maze
   [maze]
-  (let [state (load-maze maze)
-        simplified (simpler-maze state)
+  (let [state (maze-with-portals (load-maze maze))
         start (get-in state [:ends "AA"])
-        end (get-in state [:ends "ZZ"])]
-    (find-shortest-path simplified start end)))
+        end (get-in state [:ends "ZZ"])
+        graph (:graph state)]
+    (g/path-distance graph (g/dijkstra graph start end))))
 
 (defn day20-part1-soln
   []
-  (dec (count (solve-maze day20-input))))
+  (solve-maze day20-input))
+
+(defrecord RecursiveMaze [lookup3d]
+  Graph
+  (vertices
+    [_]
+    (println "This would return an infinite collection"))
+
+  (edges
+    [_ v]
+    (keys (lookup3d v)))
+
+  (distance
+    [_ v1 v2]
+    ((lookup3d v1) v2)))
 
 (defn top-layer
-  [{:keys [portals maze] :as state}]
-  (let [outer-locs (map :outer (vals portals))]
-    (assoc state :maze (merge maze (zipmap outer-locs (repeat :wall))))))
+  [{:keys [ends portals graph]}]
+  (-> (reduce without-vertex graph (map :outer (vals portals)))
+      (g/pruned (conj (set (map :inner (vals portals))) (ends "AA") (ends "ZZ")))
+      maze/adjacencies
+      ->MapGraph))
 
 (defn lower-layer
-  [{:keys [ends maze] :as state}]
-  (let [wall-locs [(ends "AA") (ends "ZZ")]]
-    (assoc state :maze (merge maze (zipmap wall-locs (repeat :wall))))))
-
-(defn portal-replace-3d
-  [{:keys [labels portals]} [x y z]]
-  (let [[name side] (labels [x y])
-        [newx newy] (get-in portals [name (switch-side side)])]
-    [newx newy (if (= side :inner) (inc z) (dec z))]))
-
-(defn neighbor-fixer-3d
-  [state pos [x y z]]
-  (if (outside? state [x y])
-    (portal-replace-3d state pos)
-    [x y z]))
-
-(defn neighbor-coords-3d
-  [state [x y z]]
-  (let [neighbors (map conj (maze/adj-coords [x y]) (repeat z))]
-    (if (boundary? state [x y])
-      (filter some? (mapv (partial neighbor-fixer-3d state [x y z]) neighbors))
-      neighbors)))
-
-(defn neighbors-3d
-  [state pos]
-  (let [coords (neighbor-coords-3d state pos)
-        vals (map (state :maze) coords)]
-    (zipmap coords vals)))
-
-(defn open-neighbors-3d
-  [state pos]
-  (all-open (neighbors-3d state pos)))
-
-(defn recursive-maze
-  [state]
-  (let [top-maze-template ((simpler-maze-portals (top-layer state)) :maze)
-        lower-maze-template ((simpler-maze (lower-layer state)) :maze)]
-    (assoc state :maze (fn [[x y z]]
-                         (if (= z 0)
-                           (top-maze-template [x y])
-                           (lower-maze-template [x y]))))))
-
-; (defn find-shortest-path-3d
-;   [state start finish]
-;   (maze/dijkstra state 1000000000 open-neighbors-3d distance start finish))
-
-; (defn solve-recursive-maze
-;   [maze]
-;   (let [state (load-maze maze)
-;         start (conj (get-in state [:ends "AA"]) 0)
-;         end (conj (get-in state [:ends "ZZ"]) 0)
-;         rmaze (recursive-maze state)]
-;     (find-shortest-path-3d rmaze start end)))
-
-(defn open-neighbors2
-  [maze pos]
-  (all-open (maze/neighbors maze pos)))
-
-(defn summarize-path
-  [path]
-  (map (fn [x] [(first x) {(last x) (dec (count x))}]) path))
-
-(defn simple-border-adjacents
-  [state]
-  (let [maze (:maze state)]
-    (->>  (filter (partial boundary? state) (all-open maze))
-          (map #(g/single-path (->Maze maze (partial = :open)) %))
-          (filter #(> (count %) 1))
-          summarize-path
-          (apply concat)
-          (apply hash-map))))
-
-(defn simple-intersection-adjacents
-  [state]
-  (let [maze (:maze state)]
-    (->> (filter #(= 3 (count (open-neighbors2 maze %))) (all-open maze))
-         (mapcat #(g/all-paths (->Maze maze (partial = :open)) %))
-         summarize-path
-         (group-by first)
-         (u/fmap #(apply merge (map second %))))))
-
-(defn to-graph
-  [state]
-  (merge (simple-border-adjacents state) (simple-intersection-adjacents state)))
+  [{:keys [ends labels graph]}]
+  (-> (reduce without-vertex graph [(ends "AA") (ends "ZZ")])
+      (g/pruned (set (keys labels)))
+      maze/adjacencies
+      ->MapGraph))
 
 (defn append-if-portal
   [{:keys [labels portals]} [x y z] edges]
@@ -310,41 +184,24 @@
   [z m]
   (u/kmap #(conj % z) m))
 
-(defrecord RecursiveMaze [labels portals ends dims maze]
-  Graph
-  (vertices
-    [_]
-    (println "This would return an infinite collection"))
-
-  (edges
-    [_ v]
-    (keys (maze v)))
-
-  (distance
-    [_ v1 v2]
-    ((maze v1) v2)))
-
-(defn recursive-maze2
+(defn recursive-maze
   [state]
-  (let [top-graph (-> state top-layer simpler-maze-portals to-graph)
-        lower-graph (-> state lower-layer simpler-maze to-graph)]
-    (map->RecursiveMaze
-     (assoc state :maze (fn [[x y z]]
-                          (if (= z 0)
-                            (append-if-portal state [x y z] (to-3d 0 (top-graph [x y])))
-                            (append-if-portal state [x y z] (to-3d z (lower-graph [x y])))))))))
-
-(defn find-shortest-path-3d
-  [state start finish]
-  (let [path (g/dijkstra state start finish :limit 100000)
-        steps (map #(apply (partial distance state) %) (partition 2 1 path))]
-    (println path steps)
-    (reduce + steps)))
+  (let [top-graph (top-layer state)
+        lower-graph (lower-layer state)
+        lookup-fn (fn [[x y z]]
+                    (if (= z 0)
+                      (append-if-portal state [x y z] (to-3d 0 (get-in top-graph [:graph [x y]])))
+                      (append-if-portal state [x y z] (to-3d z (get-in lower-graph [:graph [x y]])))))]
+    (->RecursiveMaze lookup-fn)))
 
 (defn solve-recursive-maze
   [maze]
   (let [state (load-maze maze)
         start (conj (get-in state [:ends "AA"]) 0)
         end (conj (get-in state [:ends "ZZ"]) 0)
-        rmaze (recursive-maze2 state)]
-    (find-shortest-path-3d rmaze start end)))
+        rmaze (recursive-maze state)]
+    (g/path-distance rmaze (g/dijkstra rmaze start end :limit 100000))))
+
+(defn day20-part2-soln
+  []
+  (solve-recursive-maze day20-input))
