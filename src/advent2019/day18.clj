@@ -18,6 +18,7 @@
         [:key s]
         [:door (str/lower-case s)]))))
 
+; TODO - think about when to cull the dead ends from the maze
 (defn load-maze
   [maze]
   (let [themaze (ascii/ascii->map maze-map maze)
@@ -48,3 +49,22 @@
   (-> state
       (assoc :graph (->MapGraph (adjacencies state)))
       (dissoc :maze)))
+
+;; TODO --- add a splice (wrong name?) function to the Graph protocol to remove a junction from the graph, but updating the
+;; neighbors so they are now directly connected with the correct distances.
+
+
+;;; Sketch of an algorithm
+; Start at entrance.
+; what keys are reachable?
+   ;;; "reachable" means that there's a path between current position and key in question without passing through a door
+   ; if only one key is reachable, move to get that key -> remove the corresponding door from the problem.
+   ; if more than one key is reachable, which one will minimize total steps over time?  That's the hard part.
+
+   ; Somehow, make the optimimum choice to go to a key.
+   ; recur now, with the newly available information
+(defn find-path
+  [{:keys [entrance keys doors graph]}]
+  (let [start entrance]
+    ;; Maybe compute all reachable points and then limit the reachable set to keys?
+    (reachable-keys g pos)))
