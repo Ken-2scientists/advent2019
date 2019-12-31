@@ -46,6 +46,6 @@
     (is (= 8 (t/card-after-multiple-shuffles 10 d22-s2 5 5)))
     (is (= 8 (t/card-after-multiple-shuffles 10 d22-s3 10 0)))))
 
-; (deftest day22-part2-soln-test
-;   (testing "Can reproduce the answer for part2"
-;     (is (= 73439 (t/day22-part2-soln)))))
+(deftest day22-part2-soln-test
+  (testing "Can reproduce the answer for part2"
+    (is (= 12545532223512 (t/day22-part2-soln)))))

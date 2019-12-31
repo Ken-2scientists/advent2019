@@ -15,90 +15,65 @@
 (def day22-input
   (map parse-line (u/puzzle-input "day22-input.txt")))
 
-(defn deal
-  [stack]
-  (reverse stack))
+(defn deal-op
+  "A deal into new stack is a mod-multiply by -1 and a mod-add of -1"
+  []
+  [-1 -1])
 
-(defn cut
-  [stack arg size]
-  (if (pos? arg)
-    (take size (concat (drop arg stack) stack))
-    (take size (concat (drop (+ size arg) stack) stack))))
+(defn cut-op
+  "A cut is mod-multiply by 1 (no-op) and a mod-add of the negative of the cut size"
+  [arg]
+  [1 (- arg)])
 
-(defn increment
-  [stack arg size]
-  (let [indices (zipmap (map #(mod (* arg %) size) (range size)) (range size))
-        lookup (vec stack)]
-    (map lookup (map indices (range size)))))
+(defn inc-op
+  "A deal with increment is a mod-multiply by the increment size and mod-add of 0 (no-op)"
+  [arg]
+  [arg 0])
 
-(defn do-step
-  [size stack [cmd arg]]
+(defn instruction->op
+  [[cmd arg]]
   (case cmd
-    :deal (deal stack)
-    :cut (cut stack arg size)
-    :increment (increment stack arg size)))
+    :deal (deal-op)
+    :cut (cut-op arg)
+    :increment (inc-op arg)))
+
+(defn reduced-ops
+  [modulus steps]
+  (reduce (partial math/mod-linear-comp modulus) (reverse (map instruction->op steps))))
+
+(defn apply-op
+  [m [a b] number]
+  (mod (+' b (*' a number)) m))
 
 (defn shuffle-deck
   ([size steps]
    (shuffle-deck size steps (range size)))
   ([size steps deck]
-   (reduce (partial do-step size) deck steps)))
+   (let [op (reduced-ops size steps)
+         indices (zipmap (map (partial apply-op size op) (range size)) (range size))
+         lookup (vec deck)]
+     (map lookup (map indices (range size))))))
 
 (defn day22-part1-soln
   []
   (u/index-of 2019 (shuffle-deck 10007 day22-input)))
 
-(defn deal-single
-  [size pos]
-  (- (dec size) pos))
-
-(defn cut-single
-  [size arg pos]
-  (if (pos? arg)
-    (if (< pos (- size arg))
-      (+ pos arg)
-      (- pos (- size arg)))
-    (if (< pos (- arg))
-      (+ pos (+ size arg))
-      (+ pos arg))))
-
-(def mod-inv-memo (memoize math/mod-inverse))
-
-(defn increment-single
-  [size arg pos]
-  (let [mod-inv (mod-inv-memo arg size)]
-    (mod (*' pos mod-inv) size)))
-
-(defn do-step-single
-  [size pos [cmd arg]]
-  (case cmd
-    :deal (deal-single size pos)
-    :cut (cut-single size arg pos)
-    :increment (increment-single size arg pos)))
-
-(defn shuffle-deck-single
-  [size steps pos]
-  (reduce (partial do-step-single size) pos (reverse steps)))
-
-(defn first-recurrence-count
-  [val coll]
-  (loop [s (drop 1 coll) count 0]
-    (if (= val (first s))
-      (inc count)
-      (recur (drop 1 s) (inc count)))))
-
 (defn card-after-multiple-shuffles
   [size steps times position]
-  (let [one-shuffle-lookup (partial shuffle-deck-single size steps)
-        _ (println "Searching for recurrence period")
-        recurrence-period (first-recurrence-count position (iterate one-shuffle-lookup position))
-        _ (println "Reccurence period identified:" recurrence-period)
-        remaining (mod times recurrence-period)
-        _ (println "Will simulate " remaining " steps")]
-    (first (drop remaining (iterate one-shuffle-lookup position)))))
+  (let [pow-op (->> (reduced-ops size steps)
+                    (math/mod-linear-inverse size)
+                    (math/mod-linear-pow size times))]
+    (apply-op size pow-op position)))
 
-(def card-count 119315717514047)
-(def shuffle-count 101741582076661)
+(def card-count
+  "One hundred nineteen trillion, three hundred fifteen billion, seven hundred seventeem million, 
+   five hundred forteen thousan, and forty-seven"
+  119315717514047)
+
+(def shuffle-count
+  "One hundred one trillion, seven hundred forty-one billion, five hundred eighty-two million,
+   seventy-six thousand, six hundred sixty-one"
+  101741582076661)
 
 (defn day22-part2-soln
   []
