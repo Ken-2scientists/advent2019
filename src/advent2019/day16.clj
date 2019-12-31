@@ -85,12 +85,32 @@
   []
   (nums->str (take 8 (run-phases day16-input 100))))
 
+; (defn real-signal
+;   [nums phases]
+;   (let [size (count nums)
+;         signal (take (* size 10000) (cycle nums))
+;         offset (read-string (nums->str (take 7 nums)))
+;         trimmed-num (vec (drop offset signal))
+;         answer (first (drop phases (iterate (partial phase-shift offset) trimmed-num)))]
+;     (take 8 answer)))
+
+(defn add-mod-10
+  [a b]
+  (mod (+ a b) 10))
+
 (defn real-signal
-  [nums phases]
-  (let [size (count nums)
-        signal (take (* size 10000) (cycle nums))
-        offset (read-string (nums->str (take 7 nums)))
-        trimmed-num (vec (drop offset signal))
-        answer (first (drop phases (iterate (partial phase-shift offset) trimmed-num)))]
-    (take 8 answer)))
+  [digits phases]
+  (let [size (count digits)
+        signal (take (* size 10000) (cycle digits))
+        skip (read-string (str/replace (nums->str (take 7 digits)) #"^0+" ""))
+        input (reverse (drop skip signal))]
+    (->> (iterate (partial reductions add-mod-10) input)
+         (drop phases)
+         first
+         (take-last 8)
+         reverse)))
+
+(defn day16-part2-soln
+  []
+  (nums->str (real-signal day16-input 100)))
 
