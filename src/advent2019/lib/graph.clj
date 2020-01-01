@@ -1,5 +1,6 @@
 (ns advent2019.lib.graph
   (:require [clojure.data.priority-map :refer [priority-map]]
+            [clojure.math.combinatorics :as combo]
             [advent2019.lib.utils :as u]))
 
 (defprotocol Graph
@@ -7,7 +8,8 @@
   (vertex [this v] "Any data/information/label associated with the given vertex in the graph")
   (edges [this v] "A collection of the edges for the given vertex in the graph")
   (distance [this v1 v2] "The distance (or edge weight) between two vertices")
-  (without-vertex [this v] "Produces a new graph with the vertex removed"))
+  (without-vertex [this v] "Produces a new graph with the vertex removed")
+  (rewired-without-vertex [this v] "Produces a new graph, re-wired to preserve the transitive edges through the removed vertex"))
 
 (defrecord MapGraph [graph]
   Graph
@@ -24,11 +26,20 @@
     (get-in graph [v1 v2]))
 
   (without-vertex
-    [_ v]
-    (let [neighbors (keys (graph v))
+    [g v]
+    (let [neighbors (edges g v)
           newgraph (-> (reduce #(update %1 %2 dissoc v) graph neighbors)
                        (dissoc v))]
-      (->MapGraph newgraph))))
+      (assoc g :graph newgraph)))
+
+  (rewired-without-vertex
+    [g v]
+    (let [neighbors (edges g v)
+          all-pairs (combo/permuted-combinations neighbors 2)
+          newedge-fn (fn [g [v1 v2]]
+                       (update-in g [:graph v1] assoc v2 (+ (distance g v1 v)
+                                                            (distance g v v2))))]
+      (without-vertex (reduce newedge-fn g all-pairs) v))))
 
 (defrecord LabeledMapGraph [graph]
   Graph
@@ -164,3 +175,15 @@
          (map (partial summarize-path graph))
          (group-by first)
          (u/fmap #(apply merge (map second %))))))
+
+(defn reachable
+  [graph start stop-cond]
+  (loop [visited #{start} ends #{} explore (edges graph start)]
+    (let [filter-pred (every-pred (complement stop-cond) (complement visited))
+          next-neighbors (filter filter-pred explore)]
+      (if (zero? (count next-neighbors))
+        ends
+        (let [node (first next-neighbors)]
+          (recur (conj visited node)
+                 (if (leaf? graph node) (conj ends node) ends)
+                 (concat explore (edges graph node))))))))

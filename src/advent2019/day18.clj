@@ -1,7 +1,11 @@
 (ns advent2019.day18
   (:require [clojure.string :as str]
             [advent2019.lib.ascii :as ascii]
-            [advent2019.lib.graph :as g :refer [Graph map->MapGraph without-vertex edges vertices distance]]
+            [advent2019.lib.graph :as g :refer [map->MapGraph
+                                                vertices
+                                                distance
+                                                without-vertex
+                                                rewired-without-vertex]]
             [advent2019.lib.maze :as maze :refer [map->Maze]]
             [advent2019.lib.utils :as u]))
 
@@ -35,9 +39,7 @@
       :doors doors
       :nodes nodes})))
 
-
 ;; Consider merging this back into the graph namespace
-
 
 (defn adjacencies
   [{:keys [nodes] :as maze}]
@@ -52,6 +54,10 @@
 (defn to-graph
   [maze]
   (map->MapGraph (merge maze {:graph (adjacencies maze)})))
+
+(defn load-graph
+  [maze]
+  (to-graph (load-maze maze)))
 
 (defn terminal-keys
   [{:keys [keys] :as graph}]
@@ -94,10 +100,34 @@
    ; Somehow, make the optimimum choice to go to a key.
    ; recur now, with the newly available information
 
+(defn door?
+  [maze pos]
+  (let [value (maze pos)]
+    (if (keyword value)
+      false
+      (= :door (first value)))))
 
-(defn find-path
-  [{:keys [entrance keys doors graph]}]
-  (let [start entrance]
-    ;; Maybe compute all reachable points and then limit the reachable set to keys?
-    ;(reachable-keys g pos)
-    ))
+(defn next-move
+  [{:keys [entrance steps maze doors] :as state} reachable]
+  (if (= 1 (count reachable))
+    (let [keypos (first reachable)
+          newkey (second (maze keypos))
+          door (doors newkey)
+          dist (distance state entrance keypos)]
+      ; (println keypos newkey door dist)
+      (-> state
+          (rewired-without-vertex door)
+          (rewired-without-vertex keypos)
+          (assoc :steps (+ steps (* 2 dist)))
+          (assoc :laststep dist)))
+    (println "Need to make a decision")))
+
+(defn shortest-path
+  [{:keys [entrance maze] :as state}]
+  (loop [newstate (assoc state :steps 0)]
+    ; (println newstate)
+    (let [reachable (g/reachable newstate entrance (partial door? maze))]
+      ; (println reachable)
+      (if (zero? (count reachable))
+        (- (:steps newstate) (:laststep newstate))
+        (recur (next-move newstate reachable))))))

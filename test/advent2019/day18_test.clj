@@ -40,11 +40,12 @@
    "###g#h#i################"
    "########################"])
 
-; (deftest shortest-path-test
-;   (testing "Can find the shortest path to clear the maze"
-;     (is (= 8   (t/shortest-path d18-s1)))
-;     (is (= 86  (t/shortest-path d18-s2)))
-;     (is (= 132 (t/shortest-path d18-s3)))
-;     (is (= 136 (t/shortest-path d18-s4)))
-;     (is (= 81  (t/shortest-path d18-s5)))))
+(deftest shortest-path-test
+  (testing "Can find the shortest path to clear the maze"
+    (is (= 8   (t/shortest-path (t/load-graph d18-s1))))
+    ; (is (= 86  (t/shortest-path d18-s2)))
+    ; (is (= 132 (t/shortest-path d18-s3)))
+    ; (is (= 136 (t/shortest-path d18-s4)))
+    ; (is (= 81  (t/shortest-path d18-s5)))
+    ))
 
