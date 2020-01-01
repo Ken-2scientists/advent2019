@@ -160,14 +160,14 @@
   [{:keys [ends portals graph]}]
   (-> (reduce without-vertex graph (map :outer (vals portals)))
       (g/pruned (conj (set (map :inner (vals portals))) (ends "AA") (ends "ZZ")))
-      maze/adjacencies
+      g/adjacencies
       ->MapGraph))
 
 (defn lower-layer
   [{:keys [ends labels graph]}]
   (-> (reduce without-vertex graph [(ends "AA") (ends "ZZ")])
       (g/pruned (set (keys labels)))
-      maze/adjacencies
+      g/adjacencies
       ->MapGraph))
 
 (defn append-if-portal

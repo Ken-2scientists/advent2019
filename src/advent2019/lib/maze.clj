@@ -72,23 +72,9 @@
     [_ v]
     (->Maze (assoc maze v :wall))))
 
-(defn summarize-path
-  [g path]
-  [(first path) {(last path) (g/path-distance g path)}])
-
-(defn adjacencies
-  [maze]
-  (let [leaves (filter (partial g/leaf? maze) (vertices maze))
-        junctions (filter (partial g/junction? maze) (vertices maze))
-        nodes (concat leaves junctions)]
-    (->> (mapcat (partial g/all-paths maze) nodes)
-         (map (partial summarize-path maze))
-         (group-by first)
-         (u/fmap #(apply merge (map second %))))))
-
 (defn Maze->Graph
   [maze]
-  (->MapGraph (adjacencies maze)))
+  (->MapGraph (g/adjacencies maze)))
 
 (defn spread-to-adjacent
   [maze [x y]]

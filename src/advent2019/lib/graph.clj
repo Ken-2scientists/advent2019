@@ -1,8 +1,10 @@
 (ns advent2019.lib.graph
-  (:require [clojure.data.priority-map :refer [priority-map]]))
+  (:require [clojure.data.priority-map :refer [priority-map]]
+            [advent2019.lib.utils :as u]))
 
 (defprotocol Graph
   (vertices [this] "A collection of all the vertices in the graph")
+  (vertex [this v] "Any data/information/label associated with the given vertex in the graph")
   (edges [this v] "A collection of the edges for the given vertex in the graph")
   (distance [this v1 v2] "The distance (or edge weight) between two vertices")
   (without-vertex [this v] "Produces a new graph with the vertex removed"))
@@ -27,6 +29,31 @@
           newgraph (-> (reduce #(update %1 %2 dissoc v) graph neighbors)
                        (dissoc v))]
       (->MapGraph newgraph))))
+
+(defrecord LabeledMapGraph [graph]
+  Graph
+  (vertices
+    [_]
+    (keys graph))
+
+  (vertex
+    [_ v]
+    (graph v))
+
+  (edges
+    [_ v]
+    (keys (:edges (graph v))))
+
+  (distance
+    [_ v1 v2]
+    (get-in graph [:edges v1 v2]))
+
+  (without-vertex
+    [_ v]
+    (let [neighbors (keys (:edges graph v))
+          newgraph (-> (reduce #(update-in %1 [:edges %2] dissoc v) graph neighbors)
+                       (dissoc v))]
+      (->LabeledMapGraph newgraph))))
 
 (defn degree
   "The degree of a vertex is the number of edges it has"
@@ -123,3 +150,17 @@
       (if (= 0 (count dead-ends))
         newgraph
         (recur (reduce without-vertex newgraph dead-ends))))))
+
+(defn summarize-path
+  [g path]
+  [(first path) {(last path) (path-distance g path)}])
+
+(defn adjacencies
+  [graph]
+  (let [leaves (filter (partial leaf? graph) (vertices graph))
+        junctions (filter (partial junction? graph) (vertices graph))
+        nodes (concat leaves junctions)]
+    (->> (mapcat (partial all-paths graph) nodes)
+         (map (partial summarize-path graph))
+         (group-by first)
+         (u/fmap #(apply merge (map second %))))))

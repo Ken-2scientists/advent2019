@@ -40,7 +40,7 @@
         junctions (filter (partial g/junction? maze) (vertices maze))
         vs (concat leaves junctions nodes)]
     (->> (mapcat #(g/all-paths maze % :excludes nodes) vs)
-         (map (partial maze/summarize-path maze))
+         (map (partial g/summarize-path maze))
          (group-by first)
          (u/fmap #(apply merge (map second %))))))
 
@@ -52,6 +52,14 @@
 
 ;; TODO --- add a splice (wrong name?) function to the Graph protocol to remove a junction from the graph, but updating the
 ;; neighbors so they are now directly connected with the correct distances.
+
+;IDEA 2020-01-01:
+; Identify the terminal keys (keys that are at leaf node on the graph) --- make sure the graph has been pruned first
+; Compute the path from those keys to the entrance.
+;;; Determine what other objects (keys doors) are along that path from the terminal key to the entrance
+;;; Estimate the total distance as the sum of the round-trip distances from the entrance to each terminal key
+;;; Keep track of the pre-requisites to get to a terminal key (i.e. what other keys are necessary first)
+;;; When you have a choice in where to go, update the estimates according to how the total distance would end up changing
 
 
 ;;; Sketch of an algorithm
@@ -67,4 +75,5 @@
   [{:keys [entrance keys doors graph]}]
   (let [start entrance]
     ;; Maybe compute all reachable points and then limit the reachable set to keys?
-    (reachable-keys g pos)))
+    ;(reachable-keys g pos)
+    ))
