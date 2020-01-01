@@ -1,8 +1,8 @@
 (ns advent2019.day18
   (:require [clojure.string :as str]
             [advent2019.lib.ascii :as ascii]
-            [advent2019.lib.graph :as g :refer [Graph ->MapGraph without-vertex edges vertices distance]]
-            [advent2019.lib.maze :as maze :refer [->Maze]]
+            [advent2019.lib.graph :as g :refer [Graph map->MapGraph without-vertex edges vertices distance]]
+            [advent2019.lib.maze :as maze :refer [map->Maze]]
             [advent2019.lib.utils :as u]))
 
 (def day18-input (vec (u/puzzle-input "day18-input.txt")))
@@ -27,15 +27,20 @@
         keys (u/invert-map (u/fmap second (into {} (filter #(= :key (first (val %))) specials))))
         doors (u/invert-map (u/fmap second (into {} (filter #(= :door (first (val %))) specials))))
         nodes (concat [entrance] (vals keys) (vals doors))]
-    {:entrance entrance
-     :keys keys
-     :doors doors
-     :nodes nodes
-     :maze (->Maze themaze (partial not= :wall))}))
+    (map->Maze
+     {:maze themaze
+      :open? (partial not= :wall)
+      :entrance entrance
+      :keys keys
+      :doors doors
+      :nodes nodes})))
 
-;; Consider merging this back into the maze namespace
+
+;; Consider merging this back into the graph namespace
+
+
 (defn adjacencies
-  [{:keys [maze nodes]}]
+  [{:keys [nodes] :as maze}]
   (let [leaves    (filter (partial g/leaf? maze) (vertices maze))
         junctions (filter (partial g/junction? maze) (vertices maze))
         vs (concat leaves junctions nodes)]
@@ -45,10 +50,27 @@
          (u/fmap #(apply merge (map second %))))))
 
 (defn to-graph
-  [state]
-  (-> state
-      (assoc :graph (->MapGraph (adjacencies state)))
-      (dissoc :maze)))
+  [maze]
+  (map->MapGraph (merge maze {:graph (adjacencies maze)})))
+
+(defn terminal-keys
+  [{:keys [keys] :as graph}]
+  (let [key-locs (vals keys)]
+    (filter (partial g/leaf? graph) key-locs)))
+
+(defn route-scout
+  [{:keys [entrance nodes maze] :as graph} key-loc]
+  (let [path (g/dijkstra graph entrance key-loc)
+        distance (g/path-distance graph path)
+        objects (map maze (filter (disj (set nodes) entrance key-loc) path))]
+    {key-loc {:route path
+              :dist distance
+              :objects objects}}))
+
+(defn routes
+  [graph]
+  (let [t-keys (terminal-keys graph)]
+    (into {} (map (partial route-scout graph) t-keys))))
 
 ;; TODO --- add a splice (wrong name?) function to the Graph protocol to remove a junction from the graph, but updating the
 ;; neighbors so they are now directly connected with the correct distances.
@@ -71,6 +93,8 @@
 
    ; Somehow, make the optimimum choice to go to a key.
    ; recur now, with the newly available information
+
+
 (defn find-path
   [{:keys [entrance keys doors graph]}]
   (let [start entrance]
