@@ -152,6 +152,10 @@
               new-state (reduce (partial dijkstra-update graph vertex) state neighbors)]
           (recur (conj visited vertex) (ffirst (entries-not-in-set visited (state :dist))) new-state))))))
 
+(defn shortest-distance
+  [graph start finish]
+  (path-distance graph (dijkstra graph start finish)))
+
 (defn pruned
   "Prunes the single branches from a graph, excluding any vertices in the exclude-set"
   [graph exclude-set]
@@ -178,12 +182,11 @@
 
 (defn reachable
   [graph start stop-cond]
-  (loop [visited #{start} ends #{} explore (edges graph start)]
-    (let [filter-pred (every-pred (complement stop-cond) (complement visited))
-          next-neighbors (filter filter-pred explore)]
+  (loop [visited #{start} explore (edges graph start)]
+    (let [next-neighbors (filter (complement visited) explore)]
+      (println "reachable-" visited explore next-neighbors)
       (if (zero? (count next-neighbors))
-        ends
+        (disj visited start)
         (let [node (first next-neighbors)]
           (recur (conj visited node)
-                 (if (leaf? graph node) (conj ends node) ends)
-                 (concat explore (edges graph node))))))))
+                 (if (stop-cond node) explore (concat explore (edges graph node)))))))))

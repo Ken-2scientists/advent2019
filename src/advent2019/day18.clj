@@ -73,7 +73,7 @@
               :dist distance
               :objects objects}}))
 
-(defn routes
+(defn key-routes
   [graph]
   (let [t-keys (terminal-keys graph)]
     (into {} (map (partial route-scout graph) t-keys))))
@@ -103,31 +103,58 @@
 (defn door?
   [maze pos]
   (let [value (maze pos)]
-    (if (keyword value)
-      false
-      (= :door (first value)))))
+    (and (not (keyword value)) (= :door (first value)))))
+
+(defn key?
+  [maze pos]
+  (let [value (maze pos)]
+    (and (not (keyword value)) (= :key (first value)))))
+
+(defn door-or-key?
+  [maze pos]
+  (or (door? maze pos) (key? maze pos)))
+
+(defn terminal-key?
+  [maze pos]
+  (and (key? maze pos) (g/leaf? maze))
+  (let [value (maze pos)]
+    (and (not (keyword value)) (= :key (first value)))))
+
+(defn move
+  [{:keys [pos steps maze doors] :as state} keypos]
+  (println keypos)
+  (let [newkey (second (maze keypos))
+        door (doors newkey)
+        dist (g/shortest-distance state pos keypos)]
+    (println keypos newkey door dist)
+    (-> state
+        (rewired-without-vertex door)
+        (assoc-in [:maze keypos] :open)
+        ; (rewired-without-vertex keypos)
+        (assoc :pos keypos)
+        (update :collected-keys conj newkey)
+        (assoc :steps (+ steps dist))
+        (assoc :laststep dist))))
 
 (defn next-move
-  [{:keys [entrance steps maze doors] :as state} reachable]
-  (if (= 1 (count reachable))
-    (let [keypos (first reachable)
-          newkey (second (maze keypos))
-          door (doors newkey)
-          dist (distance state entrance keypos)]
-      ; (println keypos newkey door dist)
-      (-> state
-          (rewired-without-vertex door)
-          (rewired-without-vertex keypos)
-          (assoc :steps (+ steps (* 2 dist)))
-          (assoc :laststep dist)))
-    (println "Need to make a decision")))
+  [{:keys [pos steps maze doors graph] :as state}]
+  (let [reachable (filter (partial key? maze) (g/reachable state pos (partial door-or-key? maze)))]
+    (println reachable)
+    (if (= 1 (count reachable))
+      (move state (first reachable))
+      (if (= 2 (count reachable))
+        (move state (first (filter (partial g/leaf? state) reachable)))
+        (println "Need to make a decision")))))
 
 (defn shortest-path
-  [{:keys [entrance maze] :as state}]
-  (loop [newstate (assoc state :steps 0)]
-    ; (println newstate)
-    (let [reachable (g/reachable newstate entrance (partial door? maze))]
-      ; (println reachable)
-      (if (zero? (count reachable))
-        (- (:steps newstate) (:laststep newstate))
-        (recur (next-move newstate reachable))))))
+  [{:keys [entrance] :as state}]
+  (loop [newstate (assoc state
+                         :collected-keys []
+                         :pos entrance
+                         :steps 0
+                         :laststep 0
+                         :key-routes (key-routes state))]
+    (println (select-keys newstate [:graph :steps :laststep :pos :collected-keys]))
+    (if (= (count (:collected-keys newstate)) (count (:keys newstate)))
+      (:steps newstate)
+      (recur (next-move newstate)))))
