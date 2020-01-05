@@ -1,8 +1,11 @@
 (ns advent2019.day18
-  (:require [clojure.set :as set]
+  (:require [clojure.data.priority-map :refer [priority-map]]
+            [clojure.set :as set]
             [clojure.string :as str]
             [advent2019.lib.ascii :as ascii]
-            [advent2019.lib.graph :as g :refer [map->MapGraph
+            [advent2019.lib.graph :as g :refer [Graph
+                                                map->MapGraph
+                                                edges
                                                 vertices
                                                 distance
                                                 without-vertex
@@ -183,35 +186,103 @@
         (assoc :steps (+ steps dist))
         (assoc :laststep dist))))
 
+(declare shortest-path-step)
 (defn chose-option
-  [{:keys [pos] :as state} options]
-  (first (sort-by (partial g/shortest-distance state pos) options)))
-; (if (= 2 (count reachable))
-;   (if (pos? (count (filter (partial g/leaf? state) reachable)))
-;     (move state (first (filter (partial g/leaf? state) reachable)))
-;     (println "Need to make an inside decision"))
-;   (println "Need to make a decision"))
-
+  [state options]
+  (let [distances (map #(shortest-path-step (move state %)) options)
+        min-dist (apply min distances)
+        best-index (u/index-of min-dist distances)]
+    (nth options best-index)))
 
 (defn next-move
   [{:keys [pos steps maze doors graph] :as state}]
   (let [needs (needs state)
         reachable-keys (set (filter (partial key? maze) (g/reachable state pos (partial door? maze))))
-        options (set/intersection needs reachable-keys)]
+        options (vec (set/intersection needs reachable-keys))]
     ; (println needs reachable-keys options)
     (if (= 1 (count options))
       (move state (first options))
       (move state (chose-option state options)))))
 
-(defn shortest-path
+(defn shortest-path-step
   [{:keys [entrance] :as state}]
-  (loop [newstate (assoc (simplify-graph state)
-                         :collected-keys []
-                         :pos entrance
-                         :steps 0
-                         :laststep 0
-                         :key-routes (key-routes state))]
+  (loop [newstate state]
+    (println (:collected-keys newstate))
     ; (println (select-keys newstate [:graph :steps :pos :keys :doors :collected-keys]))
     (if (zero? (count (:keys newstate)))
       (:steps newstate)
       (recur (next-move newstate)))))
+
+(defn shortest-path-orig
+  [{:keys [entrance] :as state}]
+  (shortest-path-step (assoc (simplify-graph state)
+                             :collected-keys []
+                             :pos entrance
+                             :steps 0
+                             :laststep 0)))
+
+(defn node-name
+  [node]
+  (if (= :entrance node)
+    "@"
+    (second node)))
+
+(defn all-routes-for-node
+  [{:keys [maze] :as graph} others node]
+  (let [paths (map (partial g/dijkstra graph node) (filter (partial not= node) others))
+        dists (map (partial g/path-distance graph) paths)
+        needs (map #(map (comp node-name maze) (filter (partial door-or-key? maze) (butlast %))) paths)]
+    {(node-name (maze node))
+     (zipmap (map (comp node-name maze last) paths)
+             (map (fn [x y] {:dist x :needs y}) dists needs))}))
+
+(defn fully-connected-keys
+  [graph]
+  (let [vertices (concat (vals (:keys graph)) [(:entrance graph)])]
+    (apply merge (map (partial all-routes-for-node graph vertices) vertices))))
+
+(defrecord LockedGraph [graph]
+  Graph
+  (vertices
+    [_]
+    (keys graph))
+
+  (edges
+    [_ v]
+    (let [collected-keys (map str v)
+          previous-keys (set (map str (drop-last v)))
+          vertex (str (last v))
+          es (filter #(empty? (set/difference (set (get-in graph [vertex % :needs]))
+                                              (set collected-keys)))
+                     (keys (graph vertex)))]
+      (map #(str/join (concat collected-keys %)) (filter (complement previous-keys) es))))
+
+  (distance
+    [_ v1 v2]
+    (get-in graph [(str (last v1)) (str (last v2)) :dist])))
+
+(defn locked-dijkstra
+  [graph start]
+  (let [max-keys (count (vertices graph))
+        init-state {:dist (priority-map start 0) :prev {}}]
+    (loop [visited #{}
+           vertex start
+           state init-state]
+      (if (= max-keys (count vertex))
+        (map str vertex)
+        (let [neighbors (filter (complement visited) (edges graph vertex))
+              new-state (reduce (partial g/dijkstra-update graph vertex) state neighbors)]
+          (recur (conj visited vertex)
+                 (ffirst (g/entries-not-in-set visited (state :dist)))
+                 new-state))))))
+
+(defn shortest-path
+  [input]
+  (let [graph (->> input
+                   ;(g/pruned)
+                   simplify-graph
+                   fully-connected-keys
+                   ->LockedGraph)
+        path (locked-dijkstra graph "@")]
+    (println path)
+    (g/path-distance graph path)))

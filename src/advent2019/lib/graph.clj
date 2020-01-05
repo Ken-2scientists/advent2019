@@ -126,14 +126,14 @@
         stop-at (if excludes (set excludes) #{})]
     (map #(single-path-2 g % v stop-at) neighbors)))
 
-(defn- dijkstra-update
+(defn dijkstra-update
   [graph vertex {:keys [dist prev] :as state} neighbor]
   (let [alt (+ (dist vertex) (distance graph vertex neighbor))]
     (if (or (nil? (dist neighbor)) (< alt (dist neighbor)))
       {:dist (assoc dist neighbor alt) :prev (assoc prev neighbor vertex)}
       state)))
 
-(defn- dijkstra-retrace
+(defn dijkstra-retrace
   [prev-steps finish]
   (loop [vertex finish chain []]
     (if (nil? vertex)
