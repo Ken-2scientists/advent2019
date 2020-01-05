@@ -33,6 +33,11 @@
   [f m]
   (zipmap (map f (keys m)) (vals m)))
 
+(defn without-keys
+  "Returns a map with only the entries in map whose key isn't in keyseq"
+  [map keyseq]
+  (select-keys map (filter (complement (set keyseq)) (keys map))))
+
 (defn rotate
   "Rotate the collection by n"
   [n coll]

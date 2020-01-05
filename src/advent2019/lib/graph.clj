@@ -184,7 +184,6 @@
   [graph start stop-cond]
   (loop [visited #{start} explore (edges graph start)]
     (let [next-neighbors (filter (complement visited) explore)]
-      (println "reachable-" visited explore next-neighbors)
       (if (zero? (count next-neighbors))
         (disj visited start)
         (let [node (first next-neighbors)]
