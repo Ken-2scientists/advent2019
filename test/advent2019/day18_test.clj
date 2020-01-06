@@ -47,6 +47,5 @@
     (is (= 132 (t/shortest-path (t/load-graph d18-s3))))
     (is (= 81  (t/shortest-path (t/load-graph d18-s5))))
     ;;; This one is the hardest of the bunch
-    ;(is (= 136 (t/shortest-path (t/load-graph d18-s4))))
-    ))
+    (is (= 136 (t/shortest-path (t/load-graph d18-s4))))))
 

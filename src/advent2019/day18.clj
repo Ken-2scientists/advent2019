@@ -255,7 +255,7 @@
           es (filter #(empty? (set/difference (set (get-in graph [vertex % :needs]))
                                               (set collected-keys)))
                      (keys (graph vertex)))]
-      (map #(str/join (concat collected-keys %)) (filter (complement previous-keys) es))))
+      (map #(str/join (concat (sort collected-keys) %)) (filter (complement previous-keys) es))))
 
   (distance
     [_ v1 v2]
@@ -269,7 +269,7 @@
            vertex start
            state init-state]
       (if (= max-keys (count vertex))
-        (map str vertex)
+        (reverse (g/dijkstra-retrace (:prev state) vertex))
         (let [neighbors (filter (complement visited) (edges graph vertex))
               new-state (reduce (partial g/dijkstra-update graph vertex) state neighbors)]
           (recur (conj visited vertex)
@@ -286,3 +286,7 @@
         path (locked-dijkstra graph "@")]
     (println path)
     (g/path-distance graph path)))
+
+(defn day18-part1-soln
+  []
+  (shortest-path (load-graph day18-input)))
