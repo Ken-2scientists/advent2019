@@ -110,7 +110,6 @@
        (filter #(> (val %) 1))
        (map first)))
 
-; TODO - make this work
 (defn unnecessary-keys
   "If a key doesn't have a corresponding door and isn't a terminal key, it doesn't need to be tracked"
   [{:keys [maze] :as graph}]
@@ -168,58 +167,58 @@
    ; recur now, with the newly available information
 
 ;;; need some notion of picking up a key "on the way" (e.g. key 'e' in d18-s3 on the way to 'g')
-(defn move
-  [{:keys [pos steps maze doors] :as state} keypos]
-  ; (println keypos)
-  (let [newkey (second (maze keypos))
-        door (doors newkey)
-        dist (g/shortest-distance state pos keypos)]
-    ; (println keypos newkey door dist)
-    (-> state
-        (rewired-without-vertex door)
-        ; (assoc-in [:maze keypos] :open)
-        ; (rewired-without-vertex keypos)
-        (assoc :pos keypos)
-        (update :collected-keys conj newkey)
-        (update :keys dissoc newkey)
-        (update :doors dissoc newkey)
-        (assoc :steps (+ steps dist))
-        (assoc :laststep dist))))
+; (defn move
+;   [{:keys [pos steps maze doors] :as state} keypos]
+;   ; (println keypos)
+;   (let [newkey (second (maze keypos))
+;         door (doors newkey)
+;         dist (g/shortest-distance state pos keypos)]
+;     ; (println keypos newkey door dist)
+;     (-> state
+;         (rewired-without-vertex door)
+;         ; (assoc-in [:maze keypos] :open)
+;         ; (rewired-without-vertex keypos)
+;         (assoc :pos keypos)
+;         (update :collected-keys conj newkey)
+;         (update :keys dissoc newkey)
+;         (update :doors dissoc newkey)
+;         (assoc :steps (+ steps dist))
+;         (assoc :laststep dist))))
 
-(declare shortest-path-step)
-(defn chose-option
-  [state options]
-  (let [distances (map #(shortest-path-step (move state %)) options)
-        min-dist (apply min distances)
-        best-index (u/index-of min-dist distances)]
-    (nth options best-index)))
+; (declare shortest-path-step)
+; (defn chose-option
+;   [state options]
+;   (let [distances (map #(shortest-path-step (move state %)) options)
+;         min-dist (apply min distances)
+;         best-index (u/index-of min-dist distances)]
+;     (nth options best-index)))
 
-(defn next-move
-  [{:keys [pos steps maze doors graph] :as state}]
-  (let [needs (needs state)
-        reachable-keys (set (filter (partial key? maze) (g/reachable state pos (partial door? maze))))
-        options (vec (set/intersection needs reachable-keys))]
-    ; (println needs reachable-keys options)
-    (if (= 1 (count options))
-      (move state (first options))
-      (move state (chose-option state options)))))
+; (defn next-move
+;   [{:keys [pos steps maze doors graph] :as state}]
+;   (let [needs (needs state)
+;         reachable-keys (set (filter (partial key? maze) (g/reachable state pos (partial door? maze))))
+;         options (vec (set/intersection needs reachable-keys))]
+;     ; (println needs reachable-keys options)
+;     (if (= 1 (count options))
+;       (move state (first options))
+;       (move state (chose-option state options)))))
 
-(defn shortest-path-step
-  [{:keys [entrance] :as state}]
-  (loop [newstate state]
-    (println (:collected-keys newstate))
-    ; (println (select-keys newstate [:graph :steps :pos :keys :doors :collected-keys]))
-    (if (zero? (count (:keys newstate)))
-      (:steps newstate)
-      (recur (next-move newstate)))))
+; (defn shortest-path-step
+;   [{:keys [entrance] :as state}]
+;   (loop [newstate state]
+;     (println (:collected-keys newstate))
+;     ; (println (select-keys newstate [:graph :steps :pos :keys :doors :collected-keys]))
+;     (if (zero? (count (:keys newstate)))
+;       (:steps newstate)
+;       (recur (next-move newstate)))))
 
-(defn shortest-path-orig
-  [{:keys [entrance] :as state}]
-  (shortest-path-step (assoc (simplify-graph state)
-                             :collected-keys []
-                             :pos entrance
-                             :steps 0
-                             :laststep 0)))
+; (defn shortest-path-orig
+;   [{:keys [entrance] :as state}]
+;   (shortest-path-step (assoc (simplify-graph state)
+;                              :collected-keys []
+;                              :pos entrance
+;                              :steps 0
+;                              :laststep 0)))
 
 (defn node-name
   [node]
@@ -290,3 +289,7 @@
 (defn day18-part1-soln
   []
   (shortest-path (load-graph day18-input)))
+
+(defn shortest-robot-path
+  [input]
+  input)
