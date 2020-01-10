@@ -48,15 +48,15 @@
 (defn load-maze
   [maze]
   (let [themaze (ascii/ascii->map maze-map maze)
-        entrance (ffirst (filter #(= :entrance (val %)) themaze))
+        entrances (map first (filter #(= :entrance (val %)) themaze))
         specials (into {} (filter #(not (keyword? (val %))) themaze))
         keys (u/invert-map (u/fmap second (into {} (filter #(= :key (first (val %))) specials))))
         doors (u/invert-map (u/fmap second (into {} (filter #(= :door (first (val %))) specials))))
-        nodes (concat [entrance] (vals keys) (vals doors))]
+        nodes (concat entrances (vals keys) (vals doors))]
     (map->Maze
      {:maze themaze
       :open? (partial not= :wall)
-      :entrance entrance
+      :entrances entrances
       :keys keys
       :doors doors
       :nodes nodes})))
@@ -87,10 +87,10 @@
     (filter (partial g/leaf? graph) key-locs)))
 
 (defn route-scout
-  [{:keys [entrance nodes maze] :as graph} key-loc]
-  (let [path (g/dijkstra graph entrance key-loc)
+  [{:keys [entrances nodes maze] :as graph} key-loc]
+  (let [path (g/dijkstra graph (first entrances) key-loc)
         distance (g/path-distance graph path)
-        objects (map maze (filter (disj (set nodes) entrance key-loc) path))]
+        objects (map maze (filter (disj (set nodes) (first entrances) key-loc) path))]
     {key-loc {:route path
               :dist distance
               :objects objects}}))
@@ -237,7 +237,7 @@
 
 (defn fully-connected-keys
   [graph]
-  (let [vertices (concat (vals (:keys graph)) [(:entrance graph)])]
+  (let [vertices (concat (vals (:keys graph)) (:entrances graph))]
     (apply merge (map (partial all-routes-for-node graph vertices) vertices))))
 
 (defrecord LockedGraph [graph]
@@ -292,4 +292,4 @@
 
 (defn shortest-robot-path
   [input]
-  input)
+  (map #(g/reachable input % (partial g/leaf? input)) (:entrances input)))
