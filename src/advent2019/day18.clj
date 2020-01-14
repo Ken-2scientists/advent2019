@@ -4,6 +4,7 @@
             [clojure.string :as str]
             [advent2019.lib.ascii :as ascii]
             [advent2019.lib.graph :as g :refer [Graph
+                                                ->MapGraph
                                                 map->MapGraph
                                                 edges
                                                 vertices
@@ -15,24 +16,6 @@
 
 (def day18-input (vec (u/puzzle-input "day18-input.txt")))
 
-(defn door?
-  [maze pos]
-  (let [value (maze pos)]
-    (and (not (keyword value)) (= :door (first value)))))
-
-(defn key?
-  [maze pos]
-  (let [value (maze pos)]
-    (and (not (keyword value)) (= :key (first value)))))
-
-(defn door-or-key?
-  [maze pos]
-  (or (door? maze pos) (key? maze pos)))
-
-(defn terminal-key?
-  [maze pos]
-  (and (key? maze pos) (g/leaf? maze pos)))
-
 (defn maze-map
   [char]
   (let [s (str char)]
@@ -40,9 +23,7 @@
       "." :open
       "#" :wall
       "@" :entrance
-      (if (re-find #"[a-z]" (str char))
-        [:key s]
-        [:door (str/lower-case s)]))))
+      s)))
 
 ; TODO - think about when to cull the dead ends from the maze
 (defn load-maze
@@ -50,99 +31,130 @@
   (let [themaze (ascii/ascii->map maze-map maze)
         entrances (map first (filter #(= :entrance (val %)) themaze))
         specials (into {} (filter #(not (keyword? (val %))) themaze))
-        keys (u/invert-map (u/fmap second (into {} (filter #(= :key (first (val %))) specials))))
-        doors (u/invert-map (u/fmap second (into {} (filter #(= :door (first (val %))) specials))))
-        nodes (concat entrances (vals keys) (vals doors))]
+        keys (map first (filter #(re-find #"[a-z]" (val %)) specials))
+        doors (map first (filter #(re-find #"[A-Z]" (val %)) specials))
+        nodes (concat entrances keys doors)]
     (map->Maze
      {:maze themaze
       :open? (partial not= :wall)
-      :entrances entrances
-      :keys keys
-      :doors doors
+      :entrances (zipmap entrances (range))
+      :keys (map themaze keys)
+      :doors (map themaze doors)
       :nodes nodes})))
 
-;; Consider merging this back into the graph namespace
+(defn unique-label
+  [{:keys [maze entrances]} [x y]]
+  (let [foo (maze [x y])]
+    (if (keyword? foo)
+      (if (= :entrance foo)
+        (str "@" (entrances [x y]))
+        (str "_" x "," y))
+      foo)))
 
+(defn summarize-path
+  [path]
+  [(first path) {(last path) (dec (count path))}])
+
+; Consider merging this back into the graph namespace
 (defn adjacencies
   [{:keys [nodes] :as maze}]
   (let [leaves    (filter (partial g/leaf? maze) (vertices maze))
         junctions (filter (partial g/junction? maze) (vertices maze))
         vs (concat leaves junctions nodes)]
     (->> (mapcat #(g/all-paths maze % :excludes nodes) vs)
-         (map (partial g/summarize-path maze))
+         (map #(map (partial unique-label maze) %))
+         (map summarize-path)
          (group-by first)
          (u/fmap #(apply merge (map second %))))))
 
-(defn to-graph
-  [maze]
-  (map->MapGraph (merge maze {:graph (adjacencies maze)})))
-
 (defn load-graph
-  [maze]
-  (to-graph (load-maze maze)))
+  [input]
+  (let [{:keys [entrances keys doors] :as maze} (load-maze input)
+        ents (map #(str "@" %) (vals entrances))
+        graph (map->MapGraph {:graph (adjacencies maze)
+                              :keys keys
+                              :doors doors
+                              :entrances ents})
+        excludes (set (concat keys doors ents))]
+    (g/pruned graph excludes)))
+
+(defn door?
+  [{:keys [doors]} vertex]
+  ((set doors) vertex))
+
+(defn key?
+  [{:keys [keys]} vertex]
+  ((set keys) vertex))
+
+(defn terminal-key?
+  [graph vertex]
+  (and (key? graph vertex) (g/leaf? graph vertex)))
+
+(defn door-or-key?
+  [graph vertex]
+  (or (door? graph vertex) (key? graph vertex)))
 
 (defn terminal-keys
   [{:keys [keys] :as graph}]
-  (let [key-locs (vals keys)]
-    (filter (partial g/leaf? graph) key-locs)))
+  (filter (partial g/leaf? graph) keys))
 
-(defn route-scout
-  [{:keys [entrances nodes maze] :as graph} key-loc]
-  (let [path (g/dijkstra graph (first entrances) key-loc)
-        distance (g/path-distance graph path)
-        objects (map maze (filter (disj (set nodes) (first entrances) key-loc) path))]
-    {key-loc {:route path
-              :dist distance
-              :objects objects}}))
+; (defn route-scout
+;   [{:keys [entrances nodes maze] :as graph} key-loc]
+;   (let [path (g/dijkstra graph (first entrances) key-loc)
+;         distance (g/path-distance graph path)
+;         objects (map maze (filter (disj (set nodes) (first entrances) key-loc) path))]
+;     {key-loc {:route path
+;               :dist distance
+;               :objects objects}}))
 
-(defn key-routes
-  [graph]
-  (let [t-keys (terminal-keys graph)]
-    (into {} (map (partial route-scout graph) t-keys))))
+; (defn key-routes
+;   [graph]
+;   (let [t-keys (terminal-keys graph)]
+;     (into {} (map (partial route-scout graph) t-keys))))
 
-(defn unnecessary-objects
-  "If a key is found along the way to a door, then neither that key nor the door need to be tracked"
-  [route]
-  (->> route
-       :objects
-       (map second)
-       frequencies
-       (filter #(> (val %) 1))
-       (map first)))
+; (defn unnecessary-objects
+;   "If a key is found along the way to a door, then neither that key nor the door need to be tracked"
+;   [route]
+;   (->> route
+;        :objects
+;        (map second)
+;        frequencies
+;        (filter #(> (val %) 1))
+;        (map first)))
 
-(defn unnecessary-keys
-  "If a key doesn't have a corresponding door and isn't a terminal key, it doesn't need to be tracked"
-  [{:keys [maze] :as graph}]
-  (let [locs (filter (complement (partial g/leaf? graph))
-                     (map (:keys graph) (set/difference (set (keys (:keys graph)))
-                                                        (set (keys (:doors graph))))))]
-    (zipmap locs (map (comp second maze) locs))))
+; (defn unnecessary-keys
+;   "If a key doesn't have a corresponding door and isn't a terminal key, it doesn't need to be tracked"
+;   [{:keys [maze] :as graph}]
+;   (let [locs (filter (complement (partial g/leaf? graph))
+;                      (map (:keys graph) (set/difference (set (keys (:keys graph)))
+;                                                         (set (keys (:doors graph))))))]
+;     (zipmap locs (map (comp second maze) locs))))
 
-(defn simplify-graph
-  [{:keys [doors nodes] :as graph}]
-  (let [routes (key-routes graph)
-        unneeded-keys (unnecessary-keys graph)
-        removals (concat (mapcat unnecessary-objects (vals routes))
-                         (vals unneeded-keys))
-        locations (concat (mapcat (fn [x] [(doors x) ((:keys graph) x)]) removals)
-                          (keys unneeded-keys))
-        newgraph (reduce rewired-without-vertex graph locations)]
-    (-> newgraph
-        (assoc :keys (u/without-keys (:keys newgraph) removals))
-        (assoc :doors (u/without-keys doors removals))
-        (assoc :nodes (filter (complement (set locations)) nodes)))))
+; (defn simplify-graph
+;   [{:keys [doors nodes] :as graph}]
+;   (let [routes (key-routes graph)
+;         unneeded-keys (unnecessary-keys graph)
+;         removals (concat (mapcat unnecessary-objects (vals routes))
+;                          (vals unneeded-keys))
+;         locations (concat (mapcat (fn [x] [(doors x) ((:keys graph) x)]) removals)
+;                           (keys unneeded-keys))
+;         newgraph (reduce rewired-without-vertex graph locations)]
+;     (-> newgraph
+;         (assoc :keys (u/without-keys (:keys newgraph) removals))
+;         (assoc :doors (u/without-keys doors removals))
+;         (assoc :nodes (filter (complement (set locations)) nodes)))))
 
-(defn route-needs
-  [route]
-  (map second (filter #(= :door (first %)) (:objects route))))
+; (defn route-needs
+;   [route]
+;   (map second (filter #(= :door (first %)) (:objects route))))
 
-(defn needs
-  [graph]
-  (let [routes (key-routes graph)
-        doors (map (:keys graph) (mapcat route-needs (vals routes)))]
-    ; (println routes)
-    ; (println doors)
-    (set (concat (keys routes) doors))))
+; (defn needs
+;   [graph]
+;   (let [routes (key-routes graph)
+;         doors (map (:keys graph) (mapcat route-needs (vals routes)))]
+;     ; (println routes)
+;     ; (println doors)
+;     (set (concat (keys routes) doors))))
 
 ;; TODO --- add a splice (wrong name?) function to the Graph protocol to remove a junction from the graph, but updating the
 ;; neighbors so they are now directly connected with the correct distances.
@@ -220,54 +232,85 @@
 ;                              :steps 0
 ;                              :laststep 0)))
 
-(defn node-name
-  [node]
-  (if (= :entrance node)
-    "@"
-    (second node)))
+; (defn node-name
+;   [node]
+;   (if (= :entrance node)
+;     "@"
+;     (second node)))
+
 
 (defn all-routes-for-node
-  [{:keys [maze] :as graph} others node]
-  (let [paths (map (partial g/dijkstra graph node) (filter (partial not= node) others))
-        dists (map (partial g/path-distance graph) paths)
-        needs (map #(map (comp node-name maze) (filter (partial door-or-key? maze) (butlast %))) paths)]
-    {(node-name (maze node))
-     (zipmap (map (comp node-name maze last) paths)
-             (map (fn [x y] {:dist x :needs y}) dists needs))}))
+  [graph vertices node]
+  (let [others (filter #(not= node %) vertices)]
+    (zipmap others (map (partial g/shortest-distance graph node) others))))
 
-(defn fully-connected-keys
-  [graph]
-  (let [vertices (concat (vals (:keys graph)) (:entrances graph))]
-    (apply merge (map (partial all-routes-for-node graph vertices) vertices))))
+; 
 
-(defrecord LockedGraph [graph]
+(defn fully-connected-keys-single
+  [{:keys [keys entrances] :as graph}]
+  (let [vertices (concat keys entrances)]
+    (zipmap vertices (map (partial all-routes-for-node graph vertices) vertices))))
+
+(defn path-needs
+  [graph node1 node2]
+  (let [path (g/dijkstra graph node1 node2)]
+    (set (map str/lower-case (filter (partial door? graph) (butlast path))))))
+
+(defn subgraph-needs
+  [{:keys [keys entrances] :as graph}]
+  (let [needs (zipmap keys
+                      (map (partial path-needs graph (first entrances)) keys))]
+    needs))
+
+(defn subgraph
+  [{:keys [keys doors] :as graph} entrance]
+  (let [reachable (set (g/reachable graph entrance (constantly false)))]
+    (assoc graph
+           :graph (select-keys (:graph graph) (concat [entrance] reachable))
+           :keys  (filter reachable keys)
+           :doors (filter reachable doors)
+           :entrances (list entrance))))
+
+(defrecord LockedGraph [graph entrances needs]
   Graph
   (vertices
     [_]
     (keys graph))
 
   (edges
-    [_ v]
-    (let [collected-keys (map str v)
-          previous-keys (set (map str (drop-last v)))
-          vertex (str (last v))
-          es (filter #(empty? (set/difference (set (get-in graph [vertex % :needs]))
-                                              (set collected-keys)))
-                     (keys (graph vertex)))]
-      (map #(str/join (concat (sort collected-keys) %)) (filter (complement previous-keys) es))))
+    [this v]
+    (let [[collected-keys vertex] v
+          all-available (conj collected-keys vertex)
+          reachable (set (mapcat second (filter #(set/superset? all-available (first %)) needs)))
+          not-yet-visited (set/difference (set (vertices this)) all-available)]
+      (map (partial vector all-available) (set/intersection not-yet-visited reachable))))
 
   (distance
-    [_ v1 v2]
-    (get-in graph [(str (last v1)) (str (last v2)) :dist])))
+    [_ [a v1] [b v2]]
+    ; (println v1 v2 (get-in graph [v1 v2]))
+    (get-in graph [v1 v2])))
+
+(defn fully-connected-keys
+  [{:keys [entrances] :as graph}]
+  (let [subgraphs (map (partial subgraph graph) entrances)
+        newgraph (apply merge (map fully-connected-keys-single subgraphs))
+        needs (apply merge (map subgraph-needs subgraphs))]
+    (map->LockedGraph
+     (assoc graph
+            :graph newgraph
+            :needs (group-by needs (keys needs))))))
 
 (defn locked-dijkstra
-  [graph start]
-  (let [max-keys (count (vertices graph))
+  [graph]
+  (let [max-keys (inc (count (vertices graph)))
+        entrances (:entrances graph)
+        start [(set entrances) (first entrances)]
         init-state {:dist (priority-map start 0) :prev {}}]
     (loop [visited #{}
            vertex start
            state init-state]
-      (if (= max-keys (count vertex))
+      (println vertex state)
+      (if (= max-keys (count visited))
         (reverse (g/dijkstra-retrace (:prev state) vertex))
         (let [neighbors (filter (complement visited) (edges graph vertex))
               new-state (reduce (partial g/dijkstra-update graph vertex) state neighbors)]
@@ -279,10 +322,11 @@
   [input]
   (let [graph (->> input
                    ;(g/pruned)
-                   simplify-graph
+                  ;  simplify-graph
                    fully-connected-keys
-                   ->LockedGraph)
-        path (locked-dijkstra graph "@")]
+                  ;  ->LockedGraph
+                   )
+        path (locked-dijkstra graph)]
     (println path)
     (g/path-distance graph path)))
 
