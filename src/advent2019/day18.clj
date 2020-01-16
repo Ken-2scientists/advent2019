@@ -254,7 +254,7 @@
 (defn path-needs
   [graph node1 node2]
   (let [path (g/dijkstra graph node1 node2)]
-    (set (map str/lower-case (filter (partial door? graph) (butlast path))))))
+    (set (map str/lower-case (filter (partial door-or-key? graph) (butlast path))))))
 
 (defn subgraph-needs
   [{:keys [keys entrances] :as graph}]
@@ -287,8 +287,8 @@
 
   (distance
     [_ [a v1] [b v2]]
-    ; (println v1 v2 (get-in graph [v1 v2]))
-    (get-in graph [v1 v2])))
+    (let [d (get-in graph [v1 v2])]
+      (if (nil? d) 1000000 d))))
 
 (defn fully-connected-keys
   [{:keys [entrances] :as graph}]
@@ -302,15 +302,14 @@
 
 (defn locked-dijkstra
   [graph]
-  (let [max-keys (inc (count (vertices graph)))
+  (let [max-keys (count (vertices graph))
         entrances (:entrances graph)
-        start [(set entrances) (first entrances)]
+        start [#{} (first entrances)]
         init-state {:dist (priority-map start 0) :prev {}}]
     (loop [visited #{}
            vertex start
            state init-state]
-      (println vertex state)
-      (if (= max-keys (count visited))
+      (if (= max-keys (inc (count (first vertex))))
         (reverse (g/dijkstra-retrace (:prev state) vertex))
         (let [neighbors (filter (complement visited) (edges graph vertex))
               new-state (reduce (partial g/dijkstra-update graph vertex) state neighbors)]
