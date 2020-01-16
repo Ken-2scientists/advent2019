@@ -68,9 +68,8 @@
          (u/fmap #(apply merge (map second %))))))
 
 (defn load-graph
-  [input]
-  (let [{:keys [entrances keys doors] :as maze} (load-maze input)
-        ents  (vals entrances)
+  [{:keys [entrances keys doors] :as maze}]
+  (let [ents  (vals entrances)
         graph (map->MapGraph {:graph (adjacencies maze)
                               :keys keys
                               :doors doors
@@ -271,40 +270,47 @@
            :doors (filter reachable doors)
            :entrances (list entrance))))
 
-(defrecord LockedGraph [graph entrances needs]
+(defn new-location
+  [key-index locations node]
+  (assoc locations (key-index node) node))
+
+(defrecord LockedGraph [graph key-index needs]
   Graph
   (vertices
     [_]
-    (keys graph))
+    (mapcat keys graph))
 
   (edges
     [this v]
-    (let [[collected-keys vertex] v
-          all-available (conj collected-keys vertex)
+    (let [[collected-keys locations] v
+          all-available (into collected-keys locations)
           reachable (set (mapcat second (filter #(set/superset? all-available (first %)) needs)))
-          not-yet-visited (set/difference (set (vertices this)) all-available)]
-      (map (partial vector all-available) (set/intersection not-yet-visited reachable))))
+          not-yet-visited (set/difference (set (vertices this)) all-available)
+          destinations (map (partial new-location key-index locations) (set/intersection not-yet-visited reachable))]
+      (map (partial vector all-available) destinations)))
 
   (distance
-    [_ [a v1] [b v2]]
-    (let [d (get-in graph [v1 v2])]
+    [_ [_ v1] [_ v2]]
+    (let [[n1 n2] (first (filter (fn [[a b]] (not= a b)) (map vector v1 v2)))
+          d (get-in graph [(key-index n1) n1 n2])]
       (if (nil? d) 1000000 d))))
 
 (defn fully-connected-keys
   [{:keys [entrances] :as graph}]
   (let [subgraphs (map (partial subgraph graph) entrances)
-        newgraph (apply merge (map fully-connected-keys-single subgraphs))
-        needs (apply merge (map subgraph-needs subgraphs))]
+        newgraph (mapv fully-connected-keys-single subgraphs)
+        needs (apply merge (map subgraph-needs subgraphs))
+        key-index (into {} (mapcat (fn [x i] (map vector (keys x) (repeat i))) newgraph (range)))]
     (map->LockedGraph
      (assoc graph
             :graph newgraph
+            :key-index key-index
             :needs (group-by needs (keys needs))))))
 
 (defn locked-dijkstra
-  [graph]
+  [{:keys [entrances] :as graph}]
   (let [max-keys (count (vertices graph))
-        entrances (:entrances graph)
-        start [#{} (first entrances)]
+        start [(set entrances) (vec entrances)]
         init-state {:dist (priority-map start 0) :prev {}}]
     (loop [visited #{}
            vertex start
@@ -331,8 +337,30 @@
 
 (defn day18-part1-soln
   []
-  (shortest-path (load-graph day18-input)))
+  (shortest-path (load-graph (load-maze day18-input))))
 
-(defn shortest-robot-path
-  [input]
-  (map #(g/reachable input % (partial g/leaf? input)) (:entrances input)))
+(defn fix-maze
+  [{:keys [entrances maze nodes] :as input}]
+  (let [[x y] (first (keys entrances))
+        newents [[(dec x) (dec y)]
+                 [(dec x) (inc y)]
+                 [(inc x) (dec y)]
+                 [(inc x) (inc y)]]
+        fixedmaze (assoc maze
+                         [x y] :wall
+                         [(dec x) y] :wall
+                         [(inc x) y] :wall
+                         [x (dec y)] :wall
+                         [x (inc y)] :wall
+                         [(dec x) (dec y)] :entrance
+                         [(dec x) (inc y)] :entrance
+                         [(inc x) (dec y)] :entrance
+                         [(inc x) (inc y)] :entrance)]
+    (assoc input
+           :maze fixedmaze
+           :nodes (into (filter (partial not= [x y]) nodes) newents)
+           :entrances (zipmap newents (map str (range))))))
+
+(defn day18-part2-soln
+  []
+  (shortest-path (load-graph (fix-maze (load-maze day18-input)))))

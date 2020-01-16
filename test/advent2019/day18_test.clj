@@ -42,10 +42,10 @@
 
 (deftest shortest-path-test
   (testing "Can find the shortest path to clear the maze"
-    (is (= 8   (t/shortest-path (t/load-graph d18-s1))))
-    (is (= 86  (t/shortest-path (t/load-graph d18-s2))))
-    (is (= 132 (t/shortest-path (t/load-graph d18-s3))))
-    (is (= 81  (t/shortest-path (t/load-graph d18-s5))))
+    (is (= 8   (t/shortest-path (t/load-graph (t/load-maze d18-s1)))))
+    (is (= 86  (t/shortest-path (t/load-graph (t/load-maze d18-s2)))))
+    (is (= 132 (t/shortest-path (t/load-graph (t/load-maze d18-s3)))))
+    (is (= 81  (t/shortest-path (t/load-graph (t/load-maze d18-s5)))))
     ;;; This one is the hardest of the bunch
     ; (is (= 136 (t/shortest-path (t/load-graph d18-s4))))
     ))
@@ -92,10 +92,10 @@
    "#o#m..#i#jk.#"
    "#############"])
 
-; (deftest shortest-robot-path-test
-;   (testing "Can find the shortest four-robot path to clear the maze"
-;     (is (= 8  (t/shortest-robot-path (t/load-graph d18-s6))))
-;     (is (= 24 (t/shortest-robot-path (t/load-graph d18-s7))))
-;     (is (= 32 (t/shortest-robot-path (t/load-graph d18-s8))))
-;     (is (= 72 (t/shortest-robot-path (t/load-graph d18-s9))))))
+(deftest shortest-robot-path-test
+  (testing "Can find the shortest four-robot path to clear the maze"
+    (is (= 8  (t/shortest-path (t/load-graph (t/load-maze d18-s6)))))
+    (is (= 24 (t/shortest-path (t/load-graph (t/load-maze d18-s7)))))
+    (is (= 32 (t/shortest-path (t/load-graph (t/load-maze d18-s8)))))
+    (is (= 72 (t/shortest-path (t/load-graph (t/load-maze d18-s9)))))))
 
