@@ -37,7 +37,7 @@
     (map->Maze
      {:maze themaze
       :open? (partial not= :wall)
-      :entrances (zipmap entrances (range))
+      :entrances (zipmap entrances (map str (range)))
       :keys (map themaze keys)
       :doors (map themaze doors)
       :nodes nodes})))
@@ -47,7 +47,7 @@
   (let [foo (maze [x y])]
     (if (keyword? foo)
       (if (= :entrance foo)
-        (str "@" (entrances [x y]))
+        (entrances [x y])
         (str "_" x "," y))
       foo)))
 
@@ -70,7 +70,7 @@
 (defn load-graph
   [input]
   (let [{:keys [entrances keys doors] :as maze} (load-maze input)
-        ents (map #(str "@" %) (vals entrances))
+        ents  (vals entrances)
         graph (map->MapGraph {:graph (adjacencies maze)
                               :keys keys
                               :doors doors
